@@ -175,7 +175,7 @@ model Project {
   id          String        @id @default(uuid())
   teamId      String
   name        String
-  description String
+  description String?
   status      ProjectStatus @default(BACKLOG)
   version     Int           @default(1)
   createdBy   String

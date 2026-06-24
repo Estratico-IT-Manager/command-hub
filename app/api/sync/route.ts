@@ -343,7 +343,7 @@ async function handleProjectSync(
 
       const projectData: Prisma.ProjectCreateInput = {
         name,
-        description,
+        description:description || "",
         status,
         creator: { connect: { id: userId } },
         team: {
