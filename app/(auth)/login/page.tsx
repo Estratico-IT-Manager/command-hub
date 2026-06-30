@@ -1,58 +1,43 @@
 'use client'
 
-import { useEffect, useState,Suspense } from 'react'
-import { useRouter, useSearchParams } from 'next/navigation'
+import { useEffect, useState, Suspense } from 'react'
+import { useSearchParams } from 'next/navigation'
 import Link from 'next/link'
-import { signIn } from '@/lib/auth-client'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card'
 import { FieldGroup, Field, FieldLabel, FieldError } from '@/components/ui/field'
 import { Spinner } from '@/components/ui/spinner'
+import { useLogin } from '@/hooks/use-mutations/auth-mutations'
 
 export default function LoginPage() {
-  const router = useRouter()
+  const login = useLogin()
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [error, setError] = useState('')
-  const [isLoading, setIsLoading] = useState(false)
-
-  const [callbackUrl,setCallbackUrl] = useState("/");
-
+  const [callbackUrl, setCallbackUrl] = useState('/')
   const searchParams = useSearchParams()
 
-
-
-  async function handleSubmit(e: React.SubmitEvent<HTMLFormElement>) {
-    e.preventDefault()
-    setError('')
-    setIsLoading(true)
-
-    try {
-      const result = await signIn.email({
-        email,
-        password,
-        callbackURL:callbackUrl
-      })
-
-      if (result.error) {
-        setError(result.error.message || 'Invalid email or password')
-      } else {
-        router.push('/dashboard')
-      }
-    } catch {
-      setError('An unexpected error occurred')
-    } finally {
-      setIsLoading(false)
-    }
-  }
-
-  useEffect(()=>{
-    const cbUrl = searchParams.get("callbackUrl");
-    if(cbUrl){
+  useEffect(() => {
+    const cbUrl = searchParams.get('callbackUrl')
+    if (cbUrl) {
       setCallbackUrl(cbUrl)
     }
-  },[searchParams])
+  }, [searchParams])
+
+  async function handleSubmit(e: React.FormEvent) {
+    e.preventDefault()
+    setError('')
+
+    login.mutate(
+      { email, password, callbackURL: callbackUrl },
+      {
+        onError: (err) => {
+          setError(err.message)
+        },
+      }
+    )
+  }
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-background p-4">
@@ -95,8 +80,8 @@ export default function LoginPage() {
             </FieldGroup>
           </CardContent>
           <CardFooter className="flex flex-col gap-4">
-            <Button type="submit" className="w-full" disabled={isLoading}>
-              {isLoading ? <Spinner className="mr-2" /> : null}
+            <Button type="submit" className="w-full" disabled={login.isPending}>
+              {login.isPending ? <Spinner className="mr-2" /> : null}
               Sign in
             </Button>
             <p className="text-sm text-muted-foreground text-center">

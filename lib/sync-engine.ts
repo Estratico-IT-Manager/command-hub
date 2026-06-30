@@ -1,6 +1,7 @@
 'use client'
 
 import { offlineDb, type SyncQueueItem } from './offline-db'
+import { getQueryClient } from './query-client'
 
 const SYNC_ENDPOINT = '/api/sync'
 const MAX_RETRIES = 20
@@ -94,6 +95,12 @@ export class SyncEngine {
             if (item.id) {
               await offlineDb.syncQueue.delete(item.id)
             }
+
+            // Invalidate the associated query to refetch fresh data
+            if (item.queryKey) {
+              const queryClient = getQueryClient()
+              queryClient.invalidateQueries({ queryKey: item.queryKey })
+            }
           } else if (response.status >= 500) {
             // Server error - retry later
             if (item.id) {
@@ -124,7 +131,19 @@ export class SyncEngine {
     recordId: string, 
     serverData: Record<string, unknown>
   ) {
-    const table = offlineDb.table(tableName + 's')
+    // Map sync table names to Dexie store names
+    const tableMap: Record<string, string> = {
+      user: 'users',
+      team: 'teams',
+      project: 'projects',
+      task: 'tasks',
+      subscription: 'subscriptions',
+      subscription_history: 'subscription_history',
+      audit_log: 'audit_log',
+    }
+
+    const storeName = tableMap[tableName] || tableName
+    const table = offlineDb.table(storeName)
     await offlineDb.transaction('rw', table, async () => {
     // 1. Check if the server returned a new ID
     const newId = serverData.id;
@@ -171,6 +190,12 @@ export class SyncEngine {
         }
         if (data.subscriptions) {
           await offlineDb.subscriptions.bulkPut(data.subscriptions.map((s: Record<string, unknown>) => ({ ...s, synced: true })))
+        }
+        if (data.subscriptionHistory) {
+          await offlineDb.subscription_history.bulkPut(data.subscriptionHistory.map((sh: Record<string, unknown>) => ({ ...sh, synced: true })))
+        }
+        if (data.auditLogs) {
+          await offlineDb.audit_log.bulkPut(data.auditLogs.map((al: Record<string, unknown>) => ({ ...al, synced: true })))
         }
       }
     } catch {

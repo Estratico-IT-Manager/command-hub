@@ -1,7 +1,6 @@
 'use client'
 
 import { useState } from 'react'
-import { useRouter } from 'next/navigation'
 import { Plus } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -18,22 +17,20 @@ import {
 } from '@/components/ui/dialog'
 import { FieldGroup, Field, FieldLabel, FieldError } from '@/components/ui/field'
 import { Spinner } from '@/components/ui/spinner'
-import { offlineDb, generateOfflineId } from '@/lib/offline-db'
-import { syncEngine } from '@/lib/sync-engine'
-import type { ProjectStatus, Team } from '@/app/generated/prisma/client'
+import { useCreateProject } from '@/hooks/use-mutations/project-mutations'
+import type { Team } from '@/app/generated/prisma/client'
 
 interface CreateProjectDialogProps {
   teams: (Team & { role: string })[]
 }
 
 export function CreateProjectDialog({ teams }: CreateProjectDialogProps) {
-  const router = useRouter()
+  const createProject = useCreateProject()
   const [open, setOpen] = useState(false)
   const [name, setName] = useState('')
   const [description, setDescription] = useState('')
   const [teamId, setTeamId] = useState('')
   const [error, setError] = useState('')
-  const [isLoading, setIsLoading] = useState(false)
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
@@ -49,53 +46,20 @@ export function CreateProjectDialog({ teams }: CreateProjectDialogProps) {
       return
     }
 
-    setIsLoading(true)
-
-    try {
-      const projectId = generateOfflineId()
-      const now = new Date().toISOString()
-
-      // Save to local database immediately
-      await offlineDb.projects.add({
-        id: projectId,
-        teamId,
-        name: name.trim(),
-        description: description.trim() || "",
-        status: "IN_PROGRESS",
-        createdBy: '', // Will be set by server
-        createdAt: now,
-        updatedAt: now,
-        synced: false,
-        pendingSync: true,
-        version:1,
-        isDeleted:false
-      })
-
-      // Queue for sync
-      if (syncEngine) {
-        await syncEngine.queueChange({
-          tableName: 'project',
-          recordId: projectId,
-          action: 'create',
-          payload: {
-            teamId,
-            name: name.trim(),
-            description: description.trim() || null,
-            status: "IN_PROGRESS"
-          }
-        })
+    createProject.mutate(
+      { name: name.trim(), description: description.trim(), teamId },
+      {
+        onSuccess: () => {
+          setOpen(false)
+          setName('')
+          setDescription('')
+          setTeamId('')
+        },
+        onError: (err) => {
+          setError(err.message)
+        },
       }
-
-      setOpen(false)
-      setName('')
-      setDescription('')
-      setTeamId('')
-      router.refresh()
-    } catch {
-      setError('Failed to create project')
-    } finally {
-      setIsLoading(false)
-    }
+    )
   }
 
   if (teams.length === 0) {
@@ -164,8 +128,8 @@ export function CreateProjectDialog({ teams }: CreateProjectDialogProps) {
             <Button type="button" variant="outline" onClick={() => setOpen(false)}>
               Cancel
             </Button>
-            <Button type="submit" disabled={isLoading}>
-              {isLoading ? <Spinner className="mr-2" /> : null}
+            <Button type="submit" disabled={createProject.isPending}>
+              {createProject.isPending ? <Spinner className="mr-2" /> : null}
               Create project
             </Button>
           </DialogFooter>

@@ -1,30 +1,27 @@
 'use client'
 
 import { useState } from 'react'
-import { useRouter } from 'next/navigation'
 import Link from 'next/link'
-import { signUp } from '@/lib/auth-client'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card'
 import { FieldGroup, Field, FieldLabel, FieldError } from '@/components/ui/field'
 import { Spinner } from '@/components/ui/spinner'
+import { useRegister } from '@/hooks/use-mutations/auth-mutations'
 import { ALLOWED_DOMAIN } from '@/lib/constants'
 
 export default function RegisterPage() {
-  const router = useRouter()
+  const register = useRegister()
   const [name, setName] = useState('')
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [confirmPassword, setConfirmPassword] = useState('')
   const [error, setError] = useState('')
-  const [isLoading, setIsLoading] = useState(false)
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
     setError('')
 
-    // Client-side domain validation
     if (!email.endsWith(`@${ALLOWED_DOMAIN}`)) {
       setError(`Only @${ALLOWED_DOMAIN} email addresses are allowed`)
       return
@@ -40,25 +37,14 @@ export default function RegisterPage() {
       return
     }
 
-    setIsLoading(true)
-
-    try {
-      const result = await signUp.email({
-        email,
-        password,
-        name
-      })
-
-      if (result.error) {
-        setError(result.error.message || 'Failed to create account')
-      } else {
-        router.push('/dashboard')
+    register.mutate(
+      { name, email, password },
+      {
+        onError: (err) => {
+          setError(err.message)
+        },
       }
-    } catch {
-      setError('An unexpected error occurred')
-    } finally {
-      setIsLoading(false)
-    }
+    )
   }
 
   return (
@@ -129,8 +115,8 @@ export default function RegisterPage() {
             </FieldGroup>
           </CardContent>
           <CardFooter className="flex flex-col gap-4">
-            <Button type="submit" className="w-full" disabled={isLoading}>
-              {isLoading ? <Spinner className="mr-2" /> : null}
+            <Button type="submit" className="w-full" disabled={register.isPending}>
+              {register.isPending ? <Spinner className="mr-2" /> : null}
               Create account
             </Button>
             <p className="text-sm text-muted-foreground text-center">

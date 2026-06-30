@@ -1,7 +1,6 @@
 'use client'
 
 import { useState } from 'react'
-import { useRouter } from 'next/navigation'
 import { Plus } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -18,41 +17,39 @@ import {
 } from '@/components/ui/dialog'
 import { FieldGroup, Field, FieldLabel, FieldError } from '@/components/ui/field'
 import { Spinner } from '@/components/ui/spinner'
-import { offlineDb, generateOfflineId } from '@/lib/offline-db'
-import { syncEngine } from '@/lib/sync-engine'
-import type{ TaskStatus,TaskPriority } from '@/app/generated/prisma/enums'
+import { useCreateTask } from '@/hooks/use-mutations/task-mutations'
+import type { TaskStatus, TaskPriority } from '@/app/generated/prisma/enums'
 
 interface CreateTaskDialogProps {
   projectId: string
   teamMembers: { id: string; name: string; email: string; role: string }[]
 }
 
-const TaskStatusItems:Record<TaskStatus,string> = {
-    BACKLOG: "BACKLOG",
-    TODO: "TODO",
-    IN_PROGRESS: "IN PROGRESS",
-    REVIEW: "REVIEW",
-    DONE: "DONE",
+const TaskStatusItems: Record<TaskStatus, string> = {
+  BACKLOG: 'BACKLOG',
+  TODO: 'TODO',
+  IN_PROGRESS: 'IN PROGRESS',
+  REVIEW: 'REVIEW',
+  DONE: 'DONE',
 }
 
-const TaskPriorityItems:Record<TaskPriority,string> = {
-    LOW: "LOW",
-    MEDIUM: "MEDIUM",
-    HIGH: "HIGH",
-    URGENT: "URGENT",
+const TaskPriorityItems: Record<TaskPriority, string> = {
+  LOW: 'LOW',
+  MEDIUM: 'MEDIUM',
+  HIGH: 'HIGH',
+  URGENT: 'URGENT',
 }
 
 export function CreateTaskDialog({ projectId, teamMembers }: CreateTaskDialogProps) {
-  const router = useRouter()
+  const createTask = useCreateTask(projectId)
   const [open, setOpen] = useState(false)
   const [title, setTitle] = useState('')
   const [description, setDescription] = useState('')
-  const [status, setStatus] = useState<TaskStatus>("TODO")
-  const [priority, setPriority] = useState<TaskPriority>("MEDIUM")
+  const [status, setStatus] = useState<TaskStatus>('TODO')
+  const [priority, setPriority] = useState<TaskPriority>('MEDIUM')
   const [assignedTo, setAssignedTo] = useState<string>('')
   const [dueDate, setDueDate] = useState('')
   const [error, setError] = useState('')
-  const [isLoading, setIsLoading] = useState(false)
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
@@ -63,74 +60,30 @@ export function CreateTaskDialog({ projectId, teamMembers }: CreateTaskDialogPro
       return
     }
 
-    setIsLoading(true)
-
-    try {
-      const taskId = generateOfflineId()
-      const now = new Date().toISOString()
-
-      // Get max position for the status column
-      const existingTasks = await offlineDb.tasks
-        .where('projectId')
-        .equals(projectId)
-        .and(t => t.status === status)
-        .toArray()
-      
-      const maxPosition = existingTasks.reduce((max, t) => Math.max(max, t.position), 0)
-      const position = maxPosition + 1000
-      const assignee = assignedTo === "u"?"":assignedTo
-
-      // Save to local database immediately
-      await offlineDb.tasks.add({
-        id: taskId,
-        projectId,
+    createTask.mutate(
+      {
         title: title.trim(),
-        description: description.trim() || "",
-        status: status,
-        priority: priority,
-        assignedTo: assignee,
-        dueDate: dueDate,
-        position,
-        createdBy: '', // Will be set by server
-        createdAt: now,
-        updatedAt: now,
-        synced: false,
-        pendingSync: true,
-        isDeleted:false
-      })
-
-      // Queue for sync
-      if (syncEngine) {
-        await syncEngine.queueChange({
-          tableName: 'task',
-          recordId: taskId,
-          action: 'create',
-          payload: {
-            projectId,
-            title: title.trim(),
-            description: description.trim() || null,
-            status,
-            priority,
-            assignedTo: assignee || null,
-            dueDate: dueDate || null,
-            position
-          }
-        })
+        description: description.trim(),
+        status,
+        priority,
+        assignedTo,
+        dueDate,
+      },
+      {
+        onSuccess: () => {
+          setOpen(false)
+          setTitle('')
+          setDescription('')
+          setStatus('TODO')
+          setPriority('MEDIUM')
+          setAssignedTo('')
+          setDueDate('')
+        },
+        onError: (err) => {
+          setError(err.message)
+        },
       }
-
-      setOpen(false)
-      setTitle('')
-      setDescription('')
-      setStatus("TODO")
-      setPriority("MEDIUM")
-      setAssignedTo('')
-      setDueDate('')
-      router.refresh()
-    } catch {
-      setError('Failed to create task')
-    } finally {
-      setIsLoading(false)
-    }
+    )
   }
 
   return (
@@ -144,9 +97,7 @@ export function CreateTaskDialog({ projectId, teamMembers }: CreateTaskDialogPro
       <DialogContent className="max-w-md">
         <DialogHeader>
           <DialogTitle>Create new task</DialogTitle>
-          <DialogDescription>
-            Add a new task to this project
-          </DialogDescription>
+          <DialogDescription>Add a new task to this project</DialogDescription>
         </DialogHeader>
         <form onSubmit={handleSubmit}>
           <FieldGroup className="py-4">
@@ -159,36 +110,36 @@ export function CreateTaskDialog({ projectId, teamMembers }: CreateTaskDialogPro
                 placeholder="e.g., Design homepage mockup"
               />
             </Field>
-            
+
             <div className="grid grid-cols-2 gap-4">
               <Field>
                 <FieldLabel htmlFor="status">Status</FieldLabel>
-                <Select value={status} onValueChange={(v:TaskStatus)=>setStatus(v)}>
+                <Select value={status} onValueChange={(v: TaskStatus) => setStatus(v)}>
                   <SelectTrigger>
-                    <SelectValue className='capitalize' />
+                    <SelectValue className="capitalize" />
                   </SelectTrigger>
                   <SelectContent>
-                    {
-                      Object.entries(TaskStatusItems).map(([value,label])=>(
-                        <SelectItem key={value} value={value} className='capitalize'>{label.toLowerCase()}</SelectItem>
-                      ))
-                    }
+                    {Object.entries(TaskStatusItems).map(([value, label]) => (
+                      <SelectItem key={value} value={value} className="capitalize">
+                        {label.toLowerCase()}
+                      </SelectItem>
+                    ))}
                   </SelectContent>
                 </Select>
               </Field>
 
               <Field>
                 <FieldLabel htmlFor="priority">Priority</FieldLabel>
-                <Select value={priority} onValueChange={(v:TaskPriority)=>setPriority(v)}>
+                <Select value={priority} onValueChange={(v: TaskPriority) => setPriority(v)}>
                   <SelectTrigger>
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    {
-                      Object.entries(TaskPriorityItems).map(([value,label])=>(
-                        <SelectItem key={value} value={value} className='capitalize'>{label.toLowerCase()}</SelectItem>
-                      ))
-                    }
+                    {Object.entries(TaskPriorityItems).map(([value, label]) => (
+                      <SelectItem key={value} value={value} className="capitalize">
+                        {label.toLowerCase()}
+                      </SelectItem>
+                    ))}
                   </SelectContent>
                 </Select>
               </Field>
@@ -238,8 +189,8 @@ export function CreateTaskDialog({ projectId, teamMembers }: CreateTaskDialogPro
             <Button type="button" variant="outline" onClick={() => setOpen(false)}>
               Cancel
             </Button>
-            <Button type="submit" disabled={isLoading}>
-              {isLoading ? <Spinner className="mr-2" /> : null}
+            <Button type="submit" disabled={createTask.isPending}>
+              {createTask.isPending ? <Spinner className="mr-2" /> : null}
               Create task
             </Button>
           </DialogFooter>

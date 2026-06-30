@@ -1,6 +1,5 @@
 'use client'
 
-import { useToast } from '@/hooks/use-toast'
 import {
   Toast,
   ToastClose,
@@ -10,9 +9,17 @@ import {
   ToastViewport,
 } from '@/components/ui/toast'
 
-export function Toaster() {
-  const { toasts } = useToast()
+interface ToastData {
+  id: string
+  title?: React.ReactNode
+  description?: React.ReactNode
+  action?: React.ReactNode
+  [key: string]: any
+}
 
+const toasts: ToastData[] = []
+
+export function Toaster() {
   return (
     <ToastProvider>
       {toasts.map(function ({ id, title, description, action, ...props }) {

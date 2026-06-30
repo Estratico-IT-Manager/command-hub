@@ -5,6 +5,7 @@ import { SidebarProvider, SidebarInset, SidebarTrigger } from '@/components/ui/s
 import { AppSidebar } from '@/components/app-sidebar'
 import { SyncInitializer } from '@/components/sync-initializer'
 import { ScrollArea } from '@/components/ui/scroll-area'
+import { ThemeToggle } from '@/components/theme-toggle'
 
 export default async function DashboardLayout({
   children,
@@ -23,6 +24,8 @@ export default async function DashboardLayout({
       <SidebarInset>
         <header className="flex h-14 items-center gap-4 border-b px-4 lg:px-6">
           <SidebarTrigger className="-ml-1" />
+          <div className='grow'/>
+          <ThemeToggle />
         </header>
         <main className="flex-1 overflow-auto p-4 lg:p-6">
           {children}

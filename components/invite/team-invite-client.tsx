@@ -1,64 +1,47 @@
-"use client";
+'use client'
 
-import { useState } from "react";
-import { Button } from "@/components/ui/button";
-import { Loader2, AlertCircle } from "lucide-react";
-import { useRouter } from "next/navigation";
+import { useState } from 'react'
+import { Button } from '@/components/ui/button'
+import { Loader2, AlertCircle } from 'lucide-react'
+import { useAcceptInvite } from '@/hooks/use-mutations/invite-mutations'
 
 export function TeamInviteClient({ inviteId }: { inviteId: string }) {
-  const [status, setStatus] = useState<"idle" | "loading" | "error">("idle");
-  const [errorMsg, setErrorMsg] = useState("");
-  const router = useRouter();
+  const acceptInvite = useAcceptInvite(inviteId)
+  const [errorMsg, setErrorMsg] = useState('')
 
-  const handleAccept = async () => {
-    setStatus("loading");
-    setErrorMsg("");
+  const handleAccept = () => {
+    setErrorMsg('')
+    acceptInvite.mutate(undefined, {
+      onError: (err) => {
+        setErrorMsg(err.message)
+      },
+    })
+  }
 
-    try {
-      const response = await fetch(`/api/teams/invite/${inviteId}`);
-
-      if (response.ok) {
-        // If the API redirects, fetch will follow it. 
-        // We manually refresh or push to ensure the UI updates.
-        router.push(response.url);
-      } else {
-        const data = await response.json();
-        throw new Error(data.error || "Failed to join team");
-      }
-    } catch (err: any) {
-      setStatus("error");
-      setErrorMsg(err.message);
-    }
-  };
-
-  if (status === "error") {
+  if (acceptInvite.isError || errorMsg) {
     return (
       <div className="space-y-4">
         <div className="flex items-center gap-2 p-3 text-sm text-destructive bg-destructive/10 rounded-md border border-destructive/20">
           <AlertCircle className="h-4 w-4" />
-          <p>{errorMsg}</p>
+          <p>{errorMsg || 'Failed to join team'}</p>
         </div>
         <Button onClick={handleAccept} variant="outline" className="w-full">
           Try Again
         </Button>
       </div>
-    );
+    )
   }
 
   return (
-    <Button 
-      onClick={handleAccept} 
-      disabled={status === "loading"} 
-      className="w-full"
-    >
-      {status === "loading" ? (
+    <Button onClick={handleAccept} disabled={acceptInvite.isPending} className="w-full">
+      {acceptInvite.isPending ? (
         <>
           <Loader2 className="mr-2 h-4 w-4 animate-spin" />
           Joining Team...
         </>
       ) : (
-        "Accept Invitation"
+        'Accept Invitation'
       )}
     </Button>
-  );
+  )
 }

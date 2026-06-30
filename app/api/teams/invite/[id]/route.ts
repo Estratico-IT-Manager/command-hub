@@ -3,6 +3,7 @@ import { auth } from "@/lib/auth";
 import { headers } from "next/headers";
 import { NextResponse } from "next/server";
 import { InvitationStatus } from "@/app/generated/prisma/enums";
+import { env } from "@/lib/env";
 
 export async function GET(
   request: Request,
@@ -16,7 +17,7 @@ export async function GET(
   if (!session) {
     // Redirect to login but save the return URL
     return NextResponse.redirect(
-      `${process.env.BETTER_AUTH_URL}/login?callbackUrl=/invite/${inviteId}`
+      `${env.BETTER_AUTH_URL}/login?callbackUrl=/invite/${inviteId}`
     );
   }
 
@@ -63,7 +64,7 @@ export async function GET(
     ]);
 
     // 5. Redirect to the team dashboard
-    return NextResponse.redirect(`${process.env.BETTER_AUTH_URL}/dashboard/team/${invitation.teamId}`);
+    return NextResponse.redirect(`${env.BETTER_AUTH_URL}/dashboard/team/${invitation.teamId}`);
 
   } catch (error) {
     console.error("Verification error:", error);

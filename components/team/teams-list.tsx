@@ -5,8 +5,19 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Badge } from '@/components/ui/badge'
 import { Empty, EmptyDescription, EmptyHeader, EmptyMedia, EmptyTitle } from '@/components/ui/empty'
 import { Users, ChevronRight } from 'lucide-react'
-import type { Team } from '@/lib/db'
-import { TeamWithMembers } from '@/app/(dashboard)/dashboard/team/page'
+
+interface TeamWithMembers {
+  id: string
+  name: string
+  slug: string
+  role: string
+  member_count: number
+  createdAt: string
+  updatedAt: string
+  logo: string
+  metadata: any
+  pendingSync?: boolean
+}
 
 interface TeamsListProps {
   teams: TeamWithMembers[]
@@ -54,9 +65,16 @@ export function TeamsList({ teams }: TeamsListProps) {
                     </CardDescription>
                   </div>
                 </div>
-                <Badge className={roleColors[team.role as keyof typeof roleColors]}>
-                  {team.role}
-                </Badge>
+                <div className="flex items-center gap-2">
+                  <Badge className={roleColors[team.role as keyof typeof roleColors]}>
+                    {team.role}
+                  </Badge>
+                  {team.pendingSync && (
+                    <Badge variant="secondary" className="bg-[var(--estratico-warning)]/10 text-[var(--estratico-warning)] border-[var(--estratico-warning)]/20">
+                      Pending Sync
+                    </Badge>
+                  )}
+                </div>
               </div>
             </CardHeader>
             <CardContent>

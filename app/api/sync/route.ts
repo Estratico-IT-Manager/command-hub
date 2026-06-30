@@ -5,7 +5,8 @@ import { NextResponse } from "next/server";
 import {
   Project,
   ProjectStatus,
-  Role,
+  UserRole,
+  TeamRole,
   subscription,
   SubscriptionFrequency,
   Task,
@@ -13,6 +14,7 @@ import {
   TaskStatus,
   Team,
 } from "@/app/generated/prisma/client";
+import { Prisma } from "@/app/generated/prisma/client";
 
 export async function GET(request: Request) {
   const session = await auth.api.getSession({ headers: await headers() });
@@ -20,20 +22,30 @@ export async function GET(request: Request) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
+  const userRole = session.user.role as UserRole | null;
   const { searchParams } = new URL(request.url);
   const since = searchParams.get("since");
 
   try {
-    const teamMembers = await prisma.teamMember.findMany({
-      where: {
-        userId: session.user.id,
-      },
-      select: {
-        teamId: true,
-      },
-    });
+    let teamIds: string[];
 
-    const teamIds = teamMembers.map((tm) => tm.teamId);
+    // SUPER_ADMIN can access all data
+    if (userRole === UserRole.SUPER_ADMIN) {
+      const allTeams = await prisma.team.findMany({
+        select: { id: true },
+      });
+      teamIds = allTeams.map((t) => t.id);
+    } else {
+      const teamMembers = await prisma.teamMember.findMany({
+        where: {
+          userId: session.user.id,
+        },
+        select: {
+          teamId: true,
+        },
+      });
+      teamIds = teamMembers.map((tm) => tm.teamId);
+    }
 
     if (teamIds.length === 0) {
       return NextResponse.json({
@@ -41,6 +53,8 @@ export async function GET(request: Request) {
         projects: [],
         tasks: [],
         subscriptions: [],
+        subscriptionHistory: [],
+        auditLogs: [],
       });
     }
 
@@ -64,7 +78,6 @@ export async function GET(request: Request) {
 
     const additionalFilters = getFilterObj();
 
-    //teams = await sql`SELECT * FROM teams WHERE id = ANY(${teamIds}) AND updated_at > ${sinceDate}`
     teams = await prisma.team.findMany({
       where: {
         id: {
@@ -74,7 +87,6 @@ export async function GET(request: Request) {
       },
     });
 
-    //projects = await sql`SELECT * FROM projects WHERE team_id = ANY(${teamIds}) AND updated_at > ${sinceDate}`
     projects = await prisma.project.findMany({
       where: {
         teamId: {
@@ -85,11 +97,6 @@ export async function GET(request: Request) {
     });
 
     const projectIds = projects.map((p) => p.id);
-    const projectsExist = projectIds.length > 0;
-
-    /* tasks = projectIds.length > 0 
-        ? await sql`SELECT * FROM tasks WHERE project_id = ANY(${projectIds}) AND updated_at > ${sinceDate}`
-        : [] */
 
     tasks = !projectIds
       ? []
@@ -102,7 +109,6 @@ export async function GET(request: Request) {
           },
         });
 
-    //subscriptions = await sql`SELECT * FROM subscriptions WHERE team_id = ANY(${teamIds}) AND updated_at > ${sinceDate}`
     subscriptions = await prisma.subscription.findMany({
       where: {
         teamId: {
@@ -112,11 +118,63 @@ export async function GET(request: Request) {
       },
     });
 
+    // Fetch subscription history for all subscriptions
+    const subscriptionIds = subscriptions.map((s) => s.id);
+    const subscriptionHistory = subscriptionIds.length > 0
+      ? await prisma.subscription_history.findMany({
+          where: {
+            subscriptionId: {
+              in: subscriptionIds,
+            },
+            ...additionalFilters,
+          },
+        })
+      : [];
+
+    // Fetch audit logs for entities in these teams
+    const entityTypes = ["subscription", "subscription_history", "project", "task", "team"];
+    const allEntityIds = [
+      ...subscriptionIds,
+      ...subscriptions.map((s) => s.id),
+      ...projects.map((p) => p.id),
+      ...tasks.map((t) => t.id),
+      ...teamIds,
+    ];
+
+    const auditLogs = allEntityIds.length > 0
+      ? await prisma.audit_log.findMany({
+          where: {
+            OR: [
+              {
+                entityType: { in: entityTypes },
+                entityId: { in: allEntityIds },
+              },
+              {
+                entityType: "team",
+                entityId: { in: teamIds },
+              },
+            ],
+            ...additionalFilters,
+          },
+          include: {
+            user: {
+              select: {
+                id: true,
+                name: true,
+                email: true,
+              },
+            },
+          },
+        })
+      : [];
+
     return NextResponse.json({
       teams,
       projects,
       tasks,
       subscriptions,
+      subscriptionHistory,
+      auditLogs,
       syncedAt: new Date().toISOString(),
     });
   } catch (error) {
@@ -134,11 +192,12 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
+  const userRole = session.user.role as UserRole | null;
+
   try {
     const { tableName, recordId, action, payload } = await request.json();
 
     // Log sync operation
-
     await prisma.syncLog.create({
       data: {
         userId: session.user.id,
@@ -158,6 +217,7 @@ export async function POST(request: Request) {
           recordId,
           payload,
           session.user.id,
+          userRole,
         );
         break;
       case "project":
@@ -166,6 +226,7 @@ export async function POST(request: Request) {
           recordId,
           payload,
           session.user.id,
+          userRole,
         );
         break;
       case "subscription":
@@ -175,6 +236,16 @@ export async function POST(request: Request) {
           recordId,
           payload,
           session.user.id,
+          userRole,
+        );
+        break;
+      case "subscription_history":
+        result = await handleSubscriptionHistorySync(
+          action,
+          recordId,
+          payload,
+          session.user.id,
+          userRole,
         );
         break;
       case "team":
@@ -183,6 +254,7 @@ export async function POST(request: Request) {
           recordId,
           payload,
           session.user.id,
+          userRole,
         );
         break;
       default:
@@ -204,19 +276,14 @@ async function handleTaskSync(
   recordId: string,
   payload: Record<string, unknown>,
   userId: string,
+  userRole: UserRole | null,
 ) {
   switch (action) {
     case "create": {
       const newId = recordId.startsWith("offline_")
         ? crypto.randomUUID()
         : recordId;
-      /* const result = await sql`
-        INSERT INTO tasks (id, project_id, title, description, status, priority, assigned_to, due_date, position, created_by)
-        VALUES (${newId}, ${payload.projectId as string}, ${payload.title as string}, ${payload.description as string | null}, 
-                ${payload.status as string}, ${payload.priority as string}, ${payload.assignedTo as string | null}, 
-                ${payload.dueDate ? new Date(payload.dueDate as string) : null}, ${payload.position as number}, ${userId})
-        RETURNING *
-      `; */
+
       const {
         projectId,
         title,
@@ -251,19 +318,24 @@ async function handleTaskSync(
         },
       });
 
+      // Create audit log entry
+      await prisma.audit_log.create({
+        data: {
+          userId,
+          entityType: "task",
+          entityId: result.id,
+          action: "CREATE",
+          newValue: result,
+        },
+      });
+
       return result;
     }
     case "update": {
-      /* const result = await sql`
-        UPDATE tasks 
-        SET title = ${payload.title as string}, description = ${payload.description as string | null},
-            status = ${payload.status as string}, priority = ${payload.priority as string},
-            assigned_to = ${payload.assignedTo as string | null}, 
-            due_date = ${payload.dueDate ? new Date(payload.dueDate as string) : null},
-            position = ${payload.position as number}, updated_at = NOW()
-        WHERE id = ${recordId}
-        RETURNING *
-      `; */
+      const existing = await prisma.task.findUnique({
+        where: { id: recordId },
+      });
+
       const {
         projectId,
         title,
@@ -298,17 +370,45 @@ async function handleTaskSync(
         },
       });
 
+      // Create audit log entry
+      await prisma.audit_log.create({
+        data: {
+          userId,
+          entityType: "task",
+          entityId: recordId,
+          action: "UPDATE",
+          oldValue: existing || Prisma.JsonNull,
+          newValue: result,
+        },
+      });
+
       return result;
     }
 
-    case "delete":
-      //await sql`DELETE FROM tasks WHERE id = ${recordId}`;
-      const result = await prisma.task.delete({
+    case "delete": {
+      const existing = await prisma.task.findUnique({
+        where: { id: recordId },
+      });
+
+      await prisma.task.delete({
         where: {
           id: recordId,
         },
       });
+
+      // Create audit log entry
+      await prisma.audit_log.create({
+        data: {
+          userId,
+          entityType: "task",
+          entityId: recordId,
+          action: "DELETE",
+          oldValue: existing || Prisma.JsonNull,
+        },
+      });
+
       return { id: recordId, deleted: true };
+    }
 
     default:
       throw new Error("Unknown action");
@@ -320,6 +420,7 @@ async function handleProjectSync(
   recordId: string,
   payload: Record<string, unknown>,
   userId: string,
+  userRole: UserRole | null,
 ) {
   switch (action) {
     case "create": {
@@ -327,12 +428,6 @@ async function handleProjectSync(
         ? crypto.randomUUID()
         : recordId;
 
-      /* const result = await sql`
-        INSERT INTO projects (id, team_id, name, description, status, created_by)
-        VALUES (${newId}, ${payload.teamId as string}, ${payload.name as string}, 
-                ${payload.description as string | null}, ${(payload.status as string) || "active"}, ${userId})
-        RETURNING *
-      `; */
       const { teamId, name, description, status } = payload as {
         teamId: string;
         name: string;
@@ -350,16 +445,24 @@ async function handleProjectSync(
         },
       });
 
+      // Create audit log entry
+      await prisma.audit_log.create({
+        data: {
+          userId,
+          entityType: "project",
+          entityId: result.id,
+          action: "CREATE",
+          newValue: result,
+        },
+      });
+
       return result;
     }
     case "update": {
-      /* const result = await sql`
-        UPDATE projects 
-        SET name = ${payload.name as string}, description = ${payload.description as string | null},
-            status = ${payload.status as string}, updated_at = NOW()
-        WHERE id = ${recordId}
-        RETURNING *
-      `; */
+      const existing = await prisma.project.findUnique({
+        where: { id: recordId },
+      });
+
       const { teamId, name, description, status } = payload as Partial<{
         teamId: string;
         name: string;
@@ -379,16 +482,44 @@ async function handleProjectSync(
         },
       });
 
+      // Create audit log entry
+      await prisma.audit_log.create({
+        data: {
+          userId,
+          entityType: "project",
+          entityId: recordId,
+          action: "UPDATE",
+          oldValue: existing || Prisma.JsonNull,
+          newValue: result,
+        },
+      });
+
       return result;
     }
-    case "delete":
-      /* await sql`DELETE FROM projects WHERE id = ${recordId}`; */
+    case "delete": {
+      const existing = await prisma.project.findUnique({
+        where: { id: recordId },
+      });
+
       await prisma.project.delete({
         where: {
           id: recordId,
         },
       });
+
+      // Create audit log entry
+      await prisma.audit_log.create({
+        data: {
+          userId,
+          entityType: "project",
+          entityId: recordId,
+          action: "DELETE",
+          oldValue: existing || Prisma.JsonNull,
+        },
+      });
+
       return { id: recordId, deleted: true };
+    }
     default:
       throw new Error("Unknown action");
   }
@@ -399,35 +530,50 @@ async function handleSubscriptionSync(
   recordId: string,
   payload: Record<string, any>,
   userId: string,
+  userRole: UserRole | null,
 ) {
   // Logic for handling offline IDs remains the same
   const id = recordId.startsWith("offline_") ? crypto.randomUUID() : recordId;
 
   switch (action) {
     case "create": {
-      return await prisma.subscription.create({
+      const result = await prisma.subscription.create({
         data: {
           id: id,
           teamId: payload.teamId,
-          serviceName: payload.name, // mapped from 'name'
-          provider: payload.provider, // mapped from 'provider'
+          serviceName: payload.name,
+          provider: payload.provider,
           cost: payload.cost,
           currency: payload.currency || "USD",
           frequency: payload.frequency as SubscriptionFrequency,
           startDate: payload.startDate
             ? new Date(payload.startDate)
             : new Date(),
-          lastPaymentDate: payload.lastPaymentDate
-            ? new Date(payload.lastPaymentDate)
-            : new Date(),
           notes: payload.notes || "",
           isActive: payload.status !== "inactive",
         },
       });
+
+      // Create audit log entry
+      await prisma.audit_log.create({
+        data: {
+          userId,
+          entityType: "subscription",
+          entityId: result.id,
+          action: "CREATE",
+          newValue: result,
+        },
+      });
+
+      return result;
     }
 
     case "update": {
-      return await prisma.subscription.update({
+      const existing = await prisma.subscription.findUnique({
+        where: { id: recordId },
+      });
+
+      const result = await prisma.subscription.update({
         where: { id: recordId },
         data: {
           serviceName: payload.name,
@@ -439,13 +585,44 @@ async function handleSubscriptionSync(
           notes: payload.notes,
         },
       });
+
+      // Create audit log entry
+      await prisma.audit_log.create({
+        data: {
+          userId,
+          entityType: "subscription",
+          entityId: recordId,
+          action: "UPDATE",
+          oldValue: existing || Prisma.JsonNull,
+          newValue: result,
+        },
+      });
+
+      return result;
     }
 
-    case "delete":
+    case "delete": {
+      const existing = await prisma.subscription.findUnique({
+        where: { id: recordId },
+      });
+
       await prisma.subscription.delete({
         where: { id: recordId },
       });
+
+      // Create audit log entry
+      await prisma.audit_log.create({
+        data: {
+          userId,
+          entityType: "subscription",
+          entityId: recordId,
+          action: "DELETE",
+          oldValue: existing || Prisma.JsonNull,
+        },
+      });
+
       return { id: recordId, deleted: true };
+    }
 
     default:
       throw new Error("Unknown action");
@@ -457,17 +634,13 @@ async function handleTeamSync(
   recordId: string,
   payload: Record<string, any>,
   userId: string,
+  userRole: UserRole | null,
 ) {
   const id = recordId.startsWith("offline_") ? crypto.randomUUID() : recordId;
 
   switch (action) {
     case "create": {
-      /**
-       * Using a Nested Write:
-       * This creates the Team and the TeamMember (Owner) in a single
-       * atomic database transaction.
-       */
-      return await prisma.team.upsert({
+      const result = await prisma.team.upsert({
         where:{
           slug:payload.slug
         },
@@ -485,19 +658,35 @@ async function handleTeamSync(
           members: {
             create: {
               userId: userId,
-              role: Role.OWNER,
+              role: TeamRole.OWNER,
             },
           },
         },
-        // Include members in the return if you need the full object immediately
         include: {
           members: true,
         },
       });
+
+      // Create audit log entry
+      await prisma.audit_log.create({
+        data: {
+          userId,
+          entityType: "team",
+          entityId: result.id,
+          action: "CREATE",
+          newValue: result,
+        },
+      });
+
+      return result;
     }
 
     case "update": {
-      return await prisma.team.update({
+      const existing = await prisma.team.findUnique({
+        where: { id: recordId },
+      });
+
+      const result = await prisma.team.update({
         where: { id: recordId },
         data: {
           name: payload.name,
@@ -506,18 +695,166 @@ async function handleTeamSync(
           metadata: payload.metadata,
         },
       });
+
+      // Create audit log entry
+      await prisma.audit_log.create({
+        data: {
+          userId,
+          entityType: "team",
+          entityId: recordId,
+          action: "UPDATE",
+          oldValue: existing || Prisma.JsonNull,
+          newValue: result,
+        },
+      });
+
+      return result;
     }
 
-    case "delete":
-      /**
-       * Because your schema now has 'onDelete: Cascade' on the
-       * TeamMember -> Team relation, deleting the team will
-       * automatically delete all its members.
-       */
+    case "delete": {
+      const existing = await prisma.team.findUnique({
+        where: { id: recordId },
+      });
+
       await prisma.team.delete({
         where: { id: recordId },
       });
+
+      // Create audit log entry
+      await prisma.audit_log.create({
+        data: {
+          userId,
+          entityType: "team",
+          entityId: recordId,
+          action: "DELETE",
+          oldValue: existing || Prisma.JsonNull,
+        },
+      });
+
       return { id: recordId, deleted: true };
+    }
+
+    default:
+      throw new Error(`Unknown action: ${action}`);
+  }
+}
+
+async function handleSubscriptionHistorySync(
+  action: string,
+  recordId: string,
+  payload: Record<string, any>,
+  userId: string,
+  userRole: UserRole | null,
+) {
+  // SUPER_ADMIN can modify any subscription history
+  if (userRole !== UserRole.SUPER_ADMIN) {
+    // For OWNER, check team ownership via subscription
+    if (payload.subscriptionId) {
+      const subscription = await prisma.subscription.findUnique({
+        where: { id: payload.subscriptionId },
+        select: { teamId: true },
+      })
+
+      if (!subscription) {
+        throw new Error("Subscription not found");
+      }
+
+      const membership = await prisma.teamMember.findUnique({
+        where: {
+          teamId_userId: {
+            teamId: subscription.teamId,
+            userId: userId,
+          },
+        },
+      })
+
+      if (!membership || membership.role !== TeamRole.OWNER) {
+        throw new Error("Unauthorized: Only SUPER_ADMIN and team OWNER can modify subscription history");
+      }
+    } else {
+      throw new Error("Unauthorized: Only SUPER_ADMIN and team OWNER can modify subscription history");
+    }
+  }
+
+  const id = recordId.startsWith("offline_") ? crypto.randomUUID() : recordId;
+
+  switch (action) {
+    case "create": {
+      const result = await prisma.subscription_history.create({
+        data: {
+          id: id,
+          subscriptionId: payload.subscriptionId,
+          transactionId: payload.transactionId,
+          cost: payload.cost,
+          dayPaid: new Date(payload.dayPaid),
+        },
+      });
+
+      // Create audit log entry
+      await prisma.audit_log.create({
+        data: {
+          userId,
+          entityType: "subscription_history",
+          entityId: result.id,
+          action: "CREATE",
+          newValue: result,
+        },
+      });
+
+      return result;
+    }
+
+    case "update": {
+      const existing = await prisma.subscription_history.findUnique({
+        where: { id: recordId },
+      });
+
+      const result = await prisma.subscription_history.update({
+        where: { id: recordId },
+        data: {
+          transactionId: payload.transactionId,
+          cost: payload.cost,
+          dayPaid: payload.dayPaid ? new Date(payload.dayPaid) : undefined,
+        },
+      });
+
+      // Create audit log entry
+      await prisma.audit_log.create({
+        data: {
+          userId,
+          entityType: "subscription_history",
+          entityId: recordId,
+          action: "UPDATE",
+          oldValue: existing || Prisma.JsonNull,
+          newValue: result,
+        },
+      });
+
+      return result;
+    }
+
+    case "delete": {
+      const existing = await prisma.subscription_history.findUnique({
+        where: { id: recordId },
+      });
+
+      await prisma.subscription_history.delete({
+        where: { id: recordId },
+      });
+
+      // Create audit log entry
+      await prisma.audit_log.create({
+        data: {
+          userId,
+          entityType: "subscription_history",
+          entityId: recordId,
+          action: "DELETE",
+          oldValue: existing || Prisma.JsonNull,
+        },
+      });
+
+      return { id: recordId, deleted: true };
+    }
 
     default:
       throw new Error(`Unknown action: ${action}`);

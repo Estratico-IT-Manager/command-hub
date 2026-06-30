@@ -2,11 +2,12 @@ import prisma from "@/lib/prisma";
 import { auth } from "@/lib/auth";
 import { headers } from "next/headers";
 import { NextResponse } from "next/server";
-import { InvitationStatus, Role } from "@/app/generated/prisma/enums";
+import { InvitationStatus, TeamRole } from "@/app/generated/prisma/enums";
 import { addDays } from "date-fns";
 import { resend } from "@/lib/resend";
 import { EmailTemplate } from "@/components/email-template";
 import { ALLOWED_DOMAIN } from "@/lib/constants";
+import { env } from "@/lib/env";
 
 
 export async function POST(request: Request) {
@@ -16,7 +17,7 @@ export async function POST(request: Request) {
   }
 
   try {
-    const { teamId, email, role } = await request.json();
+    const { teamId, email } = await request.json();
 
     // Validate email domain
     if (!email.endsWith(`@${ALLOWED_DOMAIN}`)) {
@@ -48,10 +49,10 @@ export async function POST(request: Request) {
     }
 
     const userRole = membership.role;
-    if (userRole !== Role.OWNER && userRole !== Role.ADMIN) {
+    if (userRole !== TeamRole.OWNER) {
       return NextResponse.json(
         { error: "You do not have permission to invite members" },
-        { status: 403 },
+        { status: 403 }
       );
     }
 
@@ -104,7 +105,7 @@ export async function POST(request: Request) {
       data: {
         teamId,
         email,
-        role,
+        role: TeamRole.MEMBER,
         invitedBy: session.user.id,
         expiresAt: addDays(new Date(), 1),
       },
@@ -121,7 +122,7 @@ export async function POST(request: Request) {
         data: {
           invitedBy: session.user.name,
           teamName: membership.team.name,
-          inviteLink: `${process.env.BETTER_AUTH_URL}/invite/${invitation.id}`,
+          inviteLink: `${env.BETTER_AUTH_URL}/invite/${invitation.id}`,
         },
       }),
     });

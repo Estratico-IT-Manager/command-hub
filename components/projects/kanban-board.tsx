@@ -14,7 +14,7 @@ import { Task, TaskPriority, TaskStatus } from '@/app/generated/prisma/client'
 
 interface KanbanBoardProps {
   projectId: string
-  initialTasks: (Task & { assigned_to_name: string | null })[]
+  initialTasks: (Task & { assigned_to_name: string | null; pendingSync?: boolean })[]
   teamMembers: { id: string; name: string; email: string; role: string }[]
 }
 
@@ -109,6 +109,7 @@ export function KanbanBoard({ projectId, initialTasks, teamMembers }: KanbanBoar
           tableName: 'task',
           recordId: taskId,
           action: 'update',
+          queryKey: ['project', projectId],
           payload: {
             ...taskToMove,
             status: newStatus,
@@ -165,9 +166,16 @@ export function KanbanBoard({ projectId, initialTasks, teamMembers }: KanbanBoar
                               )}
                             >
                               <div className="flex flex-col gap-2">
-                                <p className="text-sm font-medium text-foreground line-clamp-2">
-                                  {task.title}
-                                </p>
+                                <div className="flex items-center justify-between gap-2">
+                                  <p className="text-sm font-medium text-foreground line-clamp-2">
+                                    {task.title}
+                                  </p>
+                                  {task.pendingSync && (
+                                    <Badge variant="secondary" className="shrink-0 bg-[var(--estratico-warning)]/10 text-[var(--estratico-warning)] border-[var(--estratico-warning)]/20 text-xs">
+                                      Pending Sync
+                                    </Badge>
+                                  )}
+                                </div>
                                 
                                 {task.description && (
                                   <p className="text-xs text-muted-foreground line-clamp-2">

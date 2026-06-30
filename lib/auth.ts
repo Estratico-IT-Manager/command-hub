@@ -1,8 +1,9 @@
 import { betterAuth } from 'better-auth'
 import { prismaAdapter } from "better-auth/adapters/prisma";
 import prisma from './prisma';
-import { Role } from '@/app/generated/prisma/enums';
+import { UserRole } from '@/app/generated/prisma/enums';
 import { ALLOWED_DOMAIN } from './constants';
+import { env } from './env';
 
 
 export const auth = betterAuth({
@@ -29,7 +30,7 @@ export const auth = betterAuth({
     additionalFields: {
       role: {
         type: 'string',
-        defaultValue: Role.MEMBER
+        defaultValue: UserRole.EMPLOYEE
       },
       bio:{
         type:"string",
@@ -41,12 +42,12 @@ export const auth = betterAuth({
   },
   advanced: {
     cookiePrefix: 'estratico',
-    useSecureCookies: process.env.NODE_ENV === 'production'
+    useSecureCookies: env.NODE_ENV === 'production'
   },
   hooks: {
         before: async (ctx) => {
             const body = ctx.body as any;
-            const baseUrl = process.env.BETTER_AUTH_URL || "http://localhost:3000";
+            const baseUrl = env.BETTER_AUTH_URL;
         const url = new URL(ctx.request?.url ?? "", baseUrl);
             const path = url.pathname 
 

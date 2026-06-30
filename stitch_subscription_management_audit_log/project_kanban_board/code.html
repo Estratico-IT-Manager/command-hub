@@ -1,0 +1,300 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "primary": "#197fe6",
+                        "background-light": "#f6f7f8",
+                        "background-dark": "#111921",
+                    },
+                    fontFamily: {
+                        "display": ["Inter"]
+                    },
+                    borderRadius: {"DEFAULT": "0.25rem", "lg": "0.5rem", "xl": "0.75rem", "full": "9999px"},
+                },
+            },
+        }
+    </script>
+<style>
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+        .kanban-column {
+            min-width: 300px;
+            width: 100%;
+        }
+    </style>
+<title>Project Kanban Board</title>
+</head>
+<body class="bg-background-light dark:bg-background-dark text-slate-900 dark:text-slate-100 min-h-screen">
+<div class="flex flex-col h-screen">
+<!-- Offline Banner -->
+<div class="bg-amber-500/10 border-b border-amber-500/20 px-4 py-2 flex items-center justify-center gap-2 text-amber-600 dark:text-amber-400 text-sm font-medium">
+<span class="material-symbols-outlined text-sm">cloud_off</span>
+            Offline Mode: Changes will sync automatically when your connection is restored.
+        </div>
+<!-- Top Navigation -->
+<header class="flex items-center justify-between border-b border-slate-200 dark:border-slate-800 bg-white dark:bg-background-dark px-6 py-3">
+<div class="flex items-center gap-8">
+<div class="flex items-center gap-2 text-primary">
+<span class="material-symbols-outlined text-3xl font-bold">account_tree</span>
+<h2 class="text-slate-900 dark:text-white text-lg font-bold tracking-tight">ProjectSync</h2>
+</div>
+<div class="hidden md:flex items-center gap-1 bg-slate-100 dark:bg-slate-800 rounded-lg px-3 py-1.5 border border-slate-200 dark:border-slate-700">
+<span class="material-symbols-outlined text-slate-400 text-lg">search</span>
+<input class="bg-transparent border-none focus:ring-0 text-sm w-64 placeholder:text-slate-500" placeholder="Search tasks, projects..." type="text"/>
+</div>
+</div>
+<div class="flex items-center gap-4">
+<nav class="hidden lg:flex items-center gap-6 mr-4">
+<a class="text-primary text-sm font-semibold" href="#">Dashboard</a>
+<a class="text-slate-600 dark:text-slate-400 text-sm font-medium hover:text-primary transition-colors" href="#">Projects</a>
+<a class="text-slate-600 dark:text-slate-400 text-sm font-medium hover:text-primary transition-colors" href="#">Tasks</a>
+<a class="text-slate-600 dark:text-slate-400 text-sm font-medium hover:text-primary transition-colors" href="#">Subscription</a>
+</nav>
+<div class="flex items-center gap-2">
+<button class="p-2 rounded-lg bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-700">
+<span class="material-symbols-outlined">notifications</span>
+</button>
+<button class="p-2 rounded-lg bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-700">
+<span class="material-symbols-outlined">settings</span>
+</button>
+<div class="h-8 w-8 rounded-full bg-primary/20 border border-primary/30 flex items-center justify-center overflow-hidden ml-2">
+<img alt="User Profile" class="h-full w-full object-cover" data-alt="Close up of a smiling businessman" src="https://lh3.googleusercontent.com/aida-public/AB6AXuD_HCJMIDp2ZYL3g-JNbMoimwTqR_W6WgembZBdI5usjsUEyiCzr7US6IqwD9A-hko0uyLCNfaATZjfhmM8PbKTahYlBxXYRb2iFppchYonArKFGgckqktbmROzliDJtahVjiXZmIguVPaKTG1jEEN_NUU3GMuWV_ztbay5atRqJ0pARmrHH09AvVJzyMovSsxhj5fXQU7EtEg9nV6G2rMjIk5w6AxpATKY9zc5kF3k_pRsb7SAdZMn-VU_XDgN9baWctGKTyjjhpU"/>
+</div>
+</div>
+</div>
+</header>
+<div class="flex flex-1 overflow-hidden">
+<!-- Sidebar -->
+<aside class="w-64 border-r border-slate-200 dark:border-slate-800 bg-white dark:bg-background-dark hidden md:flex flex-col p-4 gap-6">
+<div>
+<h3 class="text-xs font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest mb-4">Project Filters</h3>
+<div class="space-y-1">
+<button class="flex items-center gap-3 w-full px-3 py-2 rounded-lg bg-primary text-white text-sm font-medium">
+<span class="material-symbols-outlined text-lg">dashboard</span>
+                            Internal CRM
+                        </button>
+<button class="flex items-center gap-3 w-full px-3 py-2 rounded-lg text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 text-sm font-medium">
+<span class="material-symbols-outlined text-lg">build</span>
+                            Maintenance
+                        </button>
+<button class="flex items-center gap-3 w-full px-3 py-2 rounded-lg text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 text-sm font-medium">
+<span class="material-symbols-outlined text-lg">work</span>
+                            Client Portal
+                        </button>
+</div>
+</div>
+<div>
+<h3 class="text-xs font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest mb-4">Team Members</h3>
+<div class="space-y-2">
+<div class="flex items-center gap-3 px-3">
+<div class="h-6 w-6 rounded-full bg-slate-200 dark:bg-slate-700 overflow-hidden">
+<img alt="Team Member" class="h-full w-full object-cover" data-alt="Headshot of a female developer" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDoZindsJMKFmUo7Vki47Wqi0enqvOPpbrE-pTXkbd3pKZ07x7qmBvuA2gHjJzlAOj-KzS4psKgsqOdNIHNnWwnO3Qgg_fZXU91SUxvxthrI0dzZKU3xskrgwvg35oTyDpcLo-OhCRWc1lJZfIZsaTS5pqbhM96mWKeb3qkksse0NIKqsq0Oi-dicGVIyCKj-ND6CTVI85K8NLusJWAVCEhYrZI_LI5PiMr3B6akG3ttd0DnSx3fOLSS3ebzcZSzNDZ4iUc2533kHI"/>
+</div>
+<span class="text-sm font-medium">Alex Rivera</span>
+</div>
+<div class="flex items-center gap-3 px-3 opacity-50">
+<div class="h-6 w-6 rounded-full bg-slate-200 dark:bg-slate-700 overflow-hidden">
+<img alt="Team Member" class="h-full w-full object-cover" data-alt="Portrait of a young creative professional" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDiwSp5i2j70aypyKEOSs-PDmtPHeAbnXqjOf2nf6oI5RySvYBjdsHdweKHBpTVAbc-OcKfLkOr9q-gB2_9N0a0XQijJJhmY4vG6e_1-TfhvheZlBPDrRQ9AEjhk8pEogcJcvNyOdwJYiQDTVcDqIUJ7yDoPJnXlnZ0vf8ZUlHgv1TKZJjM6rp-m5eaSuz1RB3OVIqJIT36Cbr-9SIon_QHkqd8cFy7wD-2GMFZNIHIB1Vc1-7y5QmBf17SGBCEmH2cCyS6_eLbhXE"/>
+</div>
+<span class="text-sm font-medium">Sam Chen</span>
+</div>
+</div>
+</div>
+<div class="mt-auto">
+<div class="bg-primary/10 rounded-xl p-4 border border-primary/20">
+<p class="text-xs font-semibold text-primary mb-1 uppercase tracking-tighter">Sync Status</p>
+<div class="flex items-center justify-between mb-2">
+<span class="text-sm font-bold">12 Pending</span>
+<span class="text-xs text-slate-500">Wait for WiFi</span>
+</div>
+<div class="w-full bg-slate-200 dark:bg-slate-700 h-1.5 rounded-full overflow-hidden">
+<div class="bg-primary h-full w-[45%]"></div>
+</div>
+</div>
+</div>
+</aside>
+<!-- Kanban Area -->
+<main class="flex-1 bg-background-light dark:bg-[#0a0f14] p-6 overflow-x-auto">
+<div class="flex items-center justify-between mb-8 min-w-[1200px]">
+<div>
+<h1 class="text-2xl font-black tracking-tight">Internal CRM Development</h1>
+<p class="text-slate-500 dark:text-slate-400 text-sm">Marketing &amp; Sales Integration Phase</p>
+</div>
+<div class="flex gap-3">
+<button class="flex items-center gap-2 px-4 py-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-sm font-bold shadow-sm">
+<span class="material-symbols-outlined text-lg">download</span>
+                            Export CSV
+                        </button>
+<button class="flex items-center gap-2 px-4 py-2 bg-primary text-white rounded-lg text-sm font-bold shadow-lg shadow-primary/20 hover:bg-primary/90 transition-all">
+<span class="material-symbols-outlined text-lg">add</span>
+                            New Column
+                        </button>
+</div>
+</div>
+<div class="flex gap-6 min-w-[1200px] h-full pb-20">
+<!-- Column: To Do -->
+<div class="kanban-column flex flex-col gap-4">
+<div class="flex items-center justify-between px-1">
+<div class="flex items-center gap-2">
+<span class="w-2.5 h-2.5 rounded-full bg-slate-400"></span>
+<h3 class="font-bold text-slate-600 dark:text-slate-300">To Do</h3>
+<span class="bg-slate-200 dark:bg-slate-800 text-slate-500 text-[10px] font-black px-2 py-0.5 rounded-full">3</span>
+</div>
+<button class="text-slate-400 hover:text-primary"><span class="material-symbols-outlined">more_horiz</span></button>
+</div>
+<button class="w-full py-3 border-2 border-dashed border-slate-200 dark:border-slate-800 rounded-xl text-slate-400 hover:border-primary/50 hover:text-primary transition-all flex items-center justify-center gap-2 text-sm font-bold">
+<span class="material-symbols-outlined text-lg">add</span> New Task
+                        </button>
+<div class="space-y-4">
+<!-- Task Card -->
+<div class="bg-white dark:bg-slate-900 p-4 rounded-xl shadow-sm border border-slate-100 dark:border-slate-800 hover:shadow-md transition-shadow cursor-pointer">
+<div class="flex justify-between items-start mb-3">
+<span class="bg-primary/10 text-primary text-[10px] font-bold px-2 py-1 rounded-md uppercase tracking-wider">Features</span>
+<span class="material-symbols-outlined text-slate-300 dark:text-slate-700 text-sm">sync</span>
+</div>
+<h4 class="text-sm font-bold mb-4">Integrate Stripe subscription webhooks</h4>
+<div class="flex justify-between items-center">
+<div class="flex -space-x-2">
+<div class="h-6 w-6 rounded-full border-2 border-white dark:border-slate-900 overflow-hidden">
+<img alt="Assignee" class="h-full w-full object-cover" data-alt="Portrait of a male engineer" src="https://lh3.googleusercontent.com/aida-public/AB6AXuB3M_H5fqqRQUxxnkDnJT9Fla2mqdZjUNhJH1-ZFrrdszX63dqPImEfsQghCp4bjWAQPw_DKTsm_VxNtEJn8SoHE6fY0gePcDnDIHHWSikxMp-tmw8WaSI_RI_5imGMr4BWu9GaVABu9aaTROI9b_rKLa0Tk28PHmWvcXUtap8BVybo0u0nBlhphPD33o8msCZjw88enjUXBLJGp0PoDhW31wtkouS2r9UFsB5OZqJH_5kgF8JrWr4Z8mkwB_Ujt2PCYGQBHXrqJqg"/>
+</div>
+</div>
+<div class="flex items-center gap-2 text-slate-400 dark:text-slate-600">
+<span class="material-symbols-outlined text-sm">chat_bubble</span>
+<span class="text-[10px] font-bold">4</span>
+</div>
+</div>
+</div>
+</div>
+</div>
+<!-- Column: In Progress -->
+<div class="kanban-column flex flex-col gap-4">
+<div class="flex items-center justify-between px-1">
+<div class="flex items-center gap-2">
+<span class="w-2.5 h-2.5 rounded-full bg-primary"></span>
+<h3 class="font-bold text-slate-600 dark:text-slate-300">In Progress</h3>
+<span class="bg-primary/20 text-primary text-[10px] font-black px-2 py-0.5 rounded-full">2</span>
+</div>
+<button class="text-slate-400 hover:text-primary"><span class="material-symbols-outlined">more_horiz</span></button>
+</div>
+<button class="w-full py-3 border-2 border-dashed border-slate-200 dark:border-slate-800 rounded-xl text-slate-400 hover:border-primary/50 hover:text-primary transition-all flex items-center justify-center gap-2 text-sm font-bold">
+<span class="material-symbols-outlined text-lg">add</span> New Task
+                        </button>
+<div class="space-y-4">
+<div class="bg-white dark:bg-slate-900 p-4 rounded-xl shadow-sm border border-slate-100 dark:border-slate-800 hover:shadow-md transition-shadow cursor-pointer">
+<div class="flex justify-between items-start mb-3">
+<span class="bg-rose-500/10 text-rose-500 text-[10px] font-bold px-2 py-1 rounded-md uppercase tracking-wider">Urgent</span>
+<span class="material-symbols-outlined text-primary text-sm">sync_saved_locally</span>
+</div>
+<h4 class="text-sm font-bold mb-4">Fix data leak in dashboard maintenance mode</h4>
+<div class="flex justify-between items-center">
+<div class="flex -space-x-2">
+<div class="h-6 w-6 rounded-full border-2 border-white dark:border-slate-900 overflow-hidden">
+<img alt="Assignee" class="h-full w-full object-cover" data-alt="Portrait of a smiling professional" src="https://lh3.googleusercontent.com/aida-public/AB6AXuB1cVezA_-FPx9ZJB34O3ap2h_y7o8ikLH1zh9Kzf_OapSHDrkeSkxZ31JdWnQc0zuYrF71Ko0eTIXECmYrDDV7a62B3e5Cuh9okKfGo0XFa0O6c9Jc6tPUcDPjVHtlXvFOqC4Zn37s1cRtoWXHWcXfNfrMzXCrbcMlihySEeU5Wt_eo1pxK_6W1ipPYIYCnPNtSxkHRMm971kRx8dS5RGE1Wit_PUdA7P_k-GmJjZV-daxM4aXlIVJiLbg0mgk9uYgR3SlJRg2Fas"/>
+</div>
+</div>
+<div class="flex items-center gap-2 text-slate-400 dark:text-slate-600">
+<span class="material-symbols-outlined text-sm">attach_file</span>
+<span class="text-[10px] font-bold">2</span>
+</div>
+</div>
+</div>
+<div class="bg-white dark:bg-slate-900 p-4 rounded-xl shadow-sm border border-slate-100 dark:border-slate-800 hover:shadow-md transition-shadow cursor-pointer">
+<div class="flex justify-between items-start mb-3">
+<span class="bg-emerald-500/10 text-emerald-500 text-[10px] font-bold px-2 py-1 rounded-md uppercase tracking-wider">Design</span>
+<span class="material-symbols-outlined text-primary text-sm">sync_saved_locally</span>
+</div>
+<h4 class="text-sm font-bold mb-4">UI Refresh: Kanban Card Styles</h4>
+<div class="flex justify-between items-center">
+<div class="flex -space-x-2">
+<div class="h-6 w-6 rounded-full border-2 border-white dark:border-slate-900 overflow-hidden">
+<img alt="Assignee" class="h-full w-full object-cover" data-alt="Headshot of a designer" src="https://lh3.googleusercontent.com/aida-public/AB6AXuD6m1O52Tcfi4PUxNrI0ztWQp3dBGmBhhdT9M2OUD9AoCFXYlrmgVMQRkHho5W_8XufzZGKxkO4Qi5dsNR7ahgmWL0tJF4q1Vt0DKEPPoZEORJSAV6I3Qm4zqeJcSxcaPKxncFOII9kk3q1Xk84l1P7qklZssImB8wrFRlKfAFSzQyKLBdPfB0WnoHcV7WKOqqx2A3puABhCY0T33KTCoewaFXA9jbk4_nZei8J__rZn4ceMo6bks_pUUYeluDbktFIE80JEb1f0Uk"/>
+</div>
+</div>
+<div class="flex items-center gap-2 text-slate-400 dark:text-slate-600">
+<span class="text-[10px] font-bold">In Review</span>
+</div>
+</div>
+</div>
+</div>
+</div>
+<!-- Column: Review -->
+<div class="kanban-column flex flex-col gap-4">
+<div class="flex items-center justify-between px-1">
+<div class="flex items-center gap-2">
+<span class="w-2.5 h-2.5 rounded-full bg-amber-400"></span>
+<h3 class="font-bold text-slate-600 dark:text-slate-300">Review</h3>
+<span class="bg-amber-200 dark:bg-slate-800 text-amber-600 text-[10px] font-black px-2 py-0.5 rounded-full">1</span>
+</div>
+<button class="text-slate-400 hover:text-primary"><span class="material-symbols-outlined">more_horiz</span></button>
+</div>
+<button class="w-full py-3 border-2 border-dashed border-slate-200 dark:border-slate-800 rounded-xl text-slate-400 hover:border-primary/50 hover:text-primary transition-all flex items-center justify-center gap-2 text-sm font-bold">
+<span class="material-symbols-outlined text-lg">add</span> New Task
+                        </button>
+<div class="space-y-4">
+<div class="bg-white dark:bg-slate-900 p-4 rounded-xl shadow-sm border border-slate-100 dark:border-slate-800 hover:shadow-md transition-shadow cursor-pointer border-l-4 border-l-amber-400">
+<div class="flex justify-between items-start mb-3">
+<span class="bg-slate-100 dark:bg-slate-800 text-slate-500 text-[10px] font-bold px-2 py-1 rounded-md uppercase tracking-wider">Refactor</span>
+<span class="material-symbols-outlined text-slate-300 dark:text-slate-700 text-sm">sync</span>
+</div>
+<h4 class="text-sm font-bold mb-4">Cleanup old API endpoints for v2</h4>
+<div class="flex justify-between items-center">
+<div class="flex -space-x-2">
+<div class="h-6 w-6 rounded-full border-2 border-white dark:border-slate-900 bg-primary flex items-center justify-center text-[8px] text-white font-bold">JD</div>
+</div>
+<div class="flex items-center gap-2 text-slate-400 dark:text-slate-600">
+<span class="material-symbols-outlined text-sm">history</span>
+<span class="text-[10px] font-bold">2d ago</span>
+</div>
+</div>
+</div>
+</div>
+</div>
+<!-- Column: Done -->
+<div class="kanban-column flex flex-col gap-4">
+<div class="flex items-center justify-between px-1">
+<div class="flex items-center gap-2">
+<span class="w-2.5 h-2.5 rounded-full bg-emerald-500"></span>
+<h3 class="font-bold text-slate-600 dark:text-slate-300">Done</h3>
+<span class="bg-emerald-200 dark:bg-slate-800 text-emerald-600 text-[10px] font-black px-2 py-0.5 rounded-full">14</span>
+</div>
+<button class="text-slate-400 hover:text-primary"><span class="material-symbols-outlined">more_horiz</span></button>
+</div>
+<button class="w-full py-3 border-2 border-dashed border-slate-200 dark:border-slate-800 rounded-xl text-slate-400 hover:border-primary/50 hover:text-primary transition-all flex items-center justify-center gap-2 text-sm font-bold">
+<span class="material-symbols-outlined text-lg">add</span> New Task
+                        </button>
+<div class="space-y-4 opacity-60">
+<div class="bg-white dark:bg-slate-900 p-4 rounded-xl shadow-sm border border-slate-100 dark:border-slate-800 grayscale">
+<div class="flex justify-between items-start mb-3">
+<span class="bg-emerald-500/10 text-emerald-500 text-[10px] font-bold px-2 py-1 rounded-md uppercase tracking-wider">Release</span>
+<span class="material-symbols-outlined text-emerald-500 text-sm">check_circle</span>
+</div>
+<h4 class="text-sm font-bold mb-4 line-through">Production deployment of v1.4.2</h4>
+<div class="flex justify-between items-center">
+<div class="flex -space-x-2">
+<div class="h-6 w-6 rounded-full border-2 border-white dark:border-slate-900 overflow-hidden">
+<img alt="Assignee" class="h-full w-full object-cover" data-alt="User avatar" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCH8nlPpiVDG0iKhiVBRH55U8hv-I3R4EJs52P0UjMuvjoAavne911I9huoxvvNTcn-OLSNtPVNbBvhiiEpzlaGBVwtIAqLvhdIyEzCFRdhmp5g_i8QzUdqXFp6C_2TogX0yyrcLxKqlXE_kPp5fwoY0_5SxpakojB1oX7PeSeSMHci5FNKDIbism1I9BUx6ifeB9uz9jVn7sFke_GKM2k6q-9gKZwW-LidP06tXHBv4lpltxMtwfjjtCyqcT12Xb3GOisXM7iqghw"/>
+</div>
+</div>
+<div class="text-[10px] font-bold text-emerald-500">Completed</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+</main>
+</div>
+</div>
+</body></html>

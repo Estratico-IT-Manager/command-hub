@@ -1,0 +1,315 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Admin Operations Dashboard</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "primary": "#197fe6",
+                        "background-light": "#f6f7f8",
+                        "background-dark": "#111921",
+                    },
+                    fontFamily: {
+                        "display": ["Inter"]
+                    },
+                    borderRadius: {"DEFAULT": "0.25rem", "lg": "0.5rem", "xl": "0.75rem", "full": "9999px"},
+                },
+            },
+        }
+    </script>
+<style>
+        body { font-family: 'Inter', sans-serif; }
+        .pulse-green { animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite; }
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: .5; }
+        }
+    </style>
+</head>
+<body class="bg-background-light dark:bg-background-dark text-slate-900 dark:text-slate-100 font-display">
+<div class="flex h-screen overflow-hidden">
+<aside class="w-64 flex-shrink-0 bg-slate-50 dark:bg-slate-900 border-r border-slate-200 dark:border-slate-800 flex flex-col justify-between">
+<div class="p-4 flex flex-col gap-6">
+<div class="flex items-center gap-3 px-2">
+<div class="w-8 h-8 bg-primary rounded-lg flex items-center justify-center text-white">
+<span class="material-symbols-outlined">corporate_fare</span>
+</div>
+<div>
+<h1 class="text-sm font-bold tracking-tight">Admin Operations</h1>
+<p class="text-xs text-slate-500 dark:text-slate-400">Enterprise Suite</p>
+</div>
+</div>
+<nav class="flex flex-col gap-1">
+<a class="flex items-center gap-3 px-3 py-2 rounded-lg bg-primary/10 text-primary" href="#">
+<span class="material-symbols-outlined">dashboard</span>
+<span class="text-sm font-medium">Dashboard</span>
+</a>
+<a class="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-slate-200 dark:hover:bg-slate-800 transition-colors" href="#">
+<span class="material-symbols-outlined">folder_open</span>
+<span class="text-sm font-medium">Projects</span>
+</a>
+<a class="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-slate-200 dark:hover:bg-slate-800 transition-colors" href="#">
+<span class="material-symbols-outlined">build</span>
+<span class="text-sm font-medium">Maintenance</span>
+</a>
+<a class="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-slate-200 dark:hover:bg-slate-800 transition-colors" href="#">
+<span class="material-symbols-outlined">payments</span>
+<span class="text-sm font-medium">Subscriptions</span>
+</a>
+<a class="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-slate-200 dark:hover:bg-slate-800 transition-colors" href="#">
+<span class="material-symbols-outlined">settings</span>
+<span class="text-sm font-medium">Settings</span>
+</a>
+</nav>
+</div>
+<div class="p-4 border-t border-slate-200 dark:border-slate-800">
+<div class="bg-slate-100 dark:bg-slate-800 p-3 rounded-xl mb-4">
+<div class="flex items-center justify-between mb-2">
+<span class="text-[10px] font-bold uppercase tracking-wider text-slate-500">Sync Queue</span>
+<span class="text-[10px] px-1.5 py-0.5 bg-primary/20 text-primary rounded">4 Pending</span>
+</div>
+<div class="w-full bg-slate-200 dark:bg-slate-700 h-1.5 rounded-full overflow-hidden">
+<div class="bg-primary h-full w-[65%]"></div>
+</div>
+<p class="text-[10px] mt-2 text-slate-500">Pushing local changes to PHP/MySQL...</p>
+</div>
+<div class="flex items-center gap-3 px-3 py-2 text-slate-500 hover:text-slate-900 dark:hover:text-slate-100 cursor-pointer">
+<span class="material-symbols-outlined">logout</span>
+<span class="text-sm font-medium">Sign Out</span>
+</div>
+</div>
+</aside>
+<main class="flex-1 flex flex-col min-w-0 overflow-hidden">
+<header class="h-16 flex items-center justify-between px-8 bg-white dark:bg-background-dark border-b border-slate-200 dark:border-slate-800 shrink-0">
+<div class="flex items-center gap-6">
+<div class="flex items-center gap-2">
+<div class="w-2.5 h-2.5 bg-green-500 rounded-full pulse-green"></div>
+<div class="flex flex-col">
+<span class="text-xs font-semibold uppercase text-slate-500">System Status</span>
+<span class="text-[10px] text-slate-400">Last Synced: 2 mins ago (Online)</span>
+</div>
+</div>
+<div class="relative w-64 group">
+<span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-sm">search</span>
+<input class="w-full pl-10 pr-4 py-2 bg-slate-100 dark:bg-slate-800 border-none rounded-lg text-sm focus:ring-1 focus:ring-primary placeholder:text-slate-500" placeholder="Quick search..." type="text"/>
+</div>
+</div>
+<div class="flex items-center gap-4">
+<button class="w-10 h-10 flex items-center justify-center rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 relative">
+<span class="material-symbols-outlined text-slate-600 dark:text-slate-400">notifications</span>
+<span class="absolute top-2 right-2 w-2 h-2 bg-red-500 rounded-full"></span>
+</button>
+<div class="h-8 w-px bg-slate-200 dark:border-slate-800 mx-2"></div>
+<div class="flex items-center gap-3">
+<div class="text-right hidden sm:block">
+<p class="text-sm font-semibold leading-none">Sarah Jenkins</p>
+<p class="text-[10px] text-slate-500 mt-1">Ops Administrator</p>
+</div>
+<div class="w-10 h-10 rounded-full bg-slate-200 dark:bg-slate-700 flex items-center justify-center overflow-hidden border border-slate-200 dark:border-slate-800">
+<img class="w-full h-full object-cover" data-alt="Female profile picture professional headshot" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBFQiQ--zOSc3eoKg8NEZZXfiCBMUsAGNt_0vz-xiDLPnxskOthAmUahAZgLhSHBo_K2t6QZFi0_SPGRZ7FIsezQgBuqUNIXAPQswA4xXJ6NvuNDQH4EgUK-0fdFdAvLbCqsuoMd5SRzcbqUmDfVO9ovL8FIFFqGWpuQb8gg_CITX3G7mYiBtg0Kc7mxi3N9l6ql2HiFqX1QT_5PKA6s3ZbxVqiFsx7j2VBQ-rso0bppCE-kHNHEraOnssctnXw3QQNCvA-ZpZNnHU"/>
+</div>
+</div>
+</div>
+</header>
+<div class="flex-1 overflow-y-auto p-8 space-y-8">
+<section>
+<div class="flex items-center justify-between mb-6">
+<h2 class="text-xl font-bold">System Health</h2>
+<button class="text-sm text-primary font-medium hover:underline flex items-center gap-1">
+                            Full Diagnostics <span class="material-symbols-outlined text-sm">chevron_right</span>
+</button>
+</div>
+<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+<div class="bg-white dark:bg-slate-900 p-6 rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm">
+<div class="flex items-center justify-between mb-4">
+<div class="w-10 h-10 rounded-lg bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center text-blue-600 dark:text-blue-400">
+<span class="material-symbols-outlined">folder</span>
+</div>
+<span class="text-xs font-medium text-green-500 bg-green-50 dark:bg-green-900/20 px-2 py-0.5 rounded-full">+12.5%</span>
+</div>
+<p class="text-slate-500 dark:text-slate-400 text-sm font-medium">Active Projects</p>
+<h3 class="text-3xl font-bold mt-1">42</h3>
+</div>
+<div class="bg-white dark:bg-slate-900 p-6 rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm">
+<div class="flex items-center justify-between mb-4">
+<div class="w-10 h-10 rounded-lg bg-amber-100 dark:bg-amber-900/30 flex items-center justify-center text-amber-600 dark:text-amber-400">
+<span class="material-symbols-outlined">list_alt</span>
+</div>
+<span class="text-xs font-medium text-amber-500 bg-amber-50 dark:bg-amber-900/20 px-2 py-0.5 rounded-full">High Priority</span>
+</div>
+<p class="text-slate-500 dark:text-slate-400 text-sm font-medium">Pending Tasks</p>
+<h3 class="text-3xl font-bold mt-1">128</h3>
+</div>
+<div class="bg-white dark:bg-slate-900 p-6 rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm">
+<div class="flex items-center justify-between mb-4">
+<div class="w-10 h-10 rounded-lg bg-purple-100 dark:bg-purple-900/30 flex items-center justify-center text-purple-600 dark:text-purple-400">
+<span class="material-symbols-outlined">engineering</span>
+</div>
+<span class="text-xs font-medium text-slate-500 bg-slate-50 dark:bg-slate-800 px-2 py-0.5 rounded-full">3 Overdue</span>
+</div>
+<p class="text-slate-500 dark:text-slate-400 text-sm font-medium">Upcoming Maintenance</p>
+<h3 class="text-3xl font-bold mt-1">14</h3>
+</div>
+<div class="bg-white dark:bg-slate-900 p-6 rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm">
+<div class="flex items-center justify-between mb-4">
+<div class="w-10 h-10 rounded-lg bg-red-100 dark:bg-red-900/30 flex items-center justify-center text-red-600 dark:text-red-400">
+<span class="material-symbols-outlined">credit_card_off</span>
+</div>
+<span class="text-xs font-medium text-red-500 bg-red-50 dark:bg-red-900/20 px-2 py-0.5 rounded-full">Action Needed</span>
+</div>
+<p class="text-slate-500 dark:text-slate-400 text-sm font-medium">Expiring Subscriptions</p>
+<h3 class="text-3xl font-bold mt-1">8</h3>
+</div>
+</div>
+</section>
+<div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+<section class="lg:col-span-2 space-y-4">
+<div class="flex items-center justify-between">
+<h2 class="text-lg font-bold">Task Board</h2>
+<div class="flex gap-2">
+<button class="px-3 py-1.5 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded text-xs font-medium">Filter</button>
+<button class="px-3 py-1.5 bg-primary text-white rounded text-xs font-bold">+ New Task</button>
+</div>
+</div>
+<div class="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 overflow-hidden shadow-sm">
+<table class="w-full text-left border-collapse">
+<thead class="bg-slate-50 dark:bg-slate-800/50">
+<tr>
+<th class="px-6 py-4 text-xs font-bold uppercase tracking-wider text-slate-500">Project / Task</th>
+<th class="px-6 py-4 text-xs font-bold uppercase tracking-wider text-slate-500">Status</th>
+<th class="px-6 py-4 text-xs font-bold uppercase tracking-wider text-slate-500">Assignee</th>
+<th class="px-6 py-4 text-xs font-bold uppercase tracking-wider text-slate-500">Deadline</th>
+</tr>
+</thead>
+<tbody class="divide-y divide-slate-100 dark:divide-slate-800">
+<tr class="hover:bg-slate-50 dark:hover:bg-slate-800/30 transition-colors">
+<td class="px-6 py-4">
+<p class="text-sm font-semibold">Infrastructure Audit</p>
+<p class="text-[11px] text-slate-500">Data Center Alpha-4</p>
+</td>
+<td class="px-6 py-4">
+<span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300">In Progress</span>
+</td>
+<td class="px-6 py-4">
+<div class="flex -space-x-2">
+<div class="w-7 h-7 rounded-full border-2 border-white dark:border-slate-900 bg-slate-200 overflow-hidden">
+<img alt="Avatar" data-alt="Avatar of user 1" src="https://lh3.googleusercontent.com/aida-public/AB6AXuAUYaJZX-0BGF05wxY3UNVbNX7uwpo9x5zJ5_Dv8vGxqgrXjsEC8cldRE9itXL3njGhUeUPQe74R1y9cXgmMtEDHtMER-6XnIIfDrQgYtbXZ2zEld95_RXqpNsrbheERXtY-aI9JRu8i_QJYkbKdRASOBLI5cXDqXk-PU1xL4C8D90DW4d35irBel6yfuRn5-bB8YZE074NnbJbPLXSL1gulBFNAnwi0id5U5yuQzaIvj5YQb7vQ4AbhKWKb9MTpHXzvG7CvpohoBs"/>
+</div>
+<div class="w-7 h-7 rounded-full border-2 border-white dark:border-slate-900 bg-slate-300 overflow-hidden">
+<img alt="Avatar" data-alt="Avatar of user 2" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDZdlKID4jnJc69qxGNX8sy_fkQAiZO6PdxowBulNOVKT7ibALzgL46LdAlaWVzuRopTMT89n89oUkN3g8IlulGJMQro27B3Kh3TW_5oFPyuNXSvOBn3OM749KA22YQP680rDwIFfUWjDbfz2eG7NLGtzmg76dQHYcm2QSRlWYHX-XGm7NjzSX2jFKWDNbkvFppLD5vpc6NCsLT9ObiHTD9hOZYfCTXaFkVU5RbUnwf3X7x7W2C70aIsJ8xcBpn1NUlMr1m1cXdoRo"/>
+</div>
+</div>
+</td>
+<td class="px-6 py-4 text-sm text-slate-600 dark:text-slate-400">Oct 24, 2023</td>
+</tr>
+<tr class="hover:bg-slate-50 dark:hover:bg-slate-800/30 transition-colors">
+<td class="px-6 py-4">
+<p class="text-sm font-semibold">Security Patch Deployment</p>
+<p class="text-[11px] text-slate-500">Cloud Node 12-14</p>
+</td>
+<td class="px-6 py-4">
+<span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-300">Review</span>
+</td>
+<td class="px-6 py-4">
+<div class="w-7 h-7 rounded-full border-2 border-white dark:border-slate-900 bg-slate-200 overflow-hidden">
+<img alt="Avatar" data-alt="Avatar of user 3" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCLk5LL82ip2QgqNL5AjYQcK43-CM0MsW-2YFSL-TccEde9fKHQvpvyRnGINULiHAZ6xmcDkwZB0p8N2HcXYhzfQFfH4mbOFCiX2pWdu6yCXWfE0g4UIJKDvxWm5wfcerw6kZROXo8jn-SaRfH6CnxfgSByPhxTiaLzJJDKjsCzQUXsQnyXftI09XjLwmqCi2UZ-moBIWRt6hhVSe2jKxnf9vGkK3bk8V0ImdsGn6frD0UQdpzCWD_Byawww718NN_KtmcJOxlXBmk"/>
+</div>
+</td>
+<td class="px-6 py-4 text-sm text-slate-600 dark:text-slate-400">Today</td>
+</tr>
+<tr class="hover:bg-slate-50 dark:hover:bg-slate-800/30 transition-colors">
+<td class="px-6 py-4">
+<p class="text-sm font-semibold">Network Optimization</p>
+<p class="text-[11px] text-slate-500">Regional Gateway</p>
+</td>
+<td class="px-6 py-4">
+<span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300">Completed</span>
+</td>
+<td class="px-6 py-4">
+<div class="w-7 h-7 rounded-full border-2 border-white dark:border-slate-900 bg-slate-200 overflow-hidden">
+<img alt="Avatar" data-alt="Avatar of user 4" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBkDygczb_QUWMM38X1jNuqfqaEIJ7TZK7yZFEH0mhxYShzCq7WEQfOjMGkPCm7gSZw1GvsbMHWvFbQYvDlzIRuBA4EuTc5AHMgbhzJwq4iacCvo_cfuazNqq0iv_yPGex7Mtscj2JFbwG_GkNMOpXookPGYN05Ep8kfbzY_NhFEXI220NWjvsdhBUWcHaHG1MfXqpFIvtwf3kAysP0GfH-X-Z8dd7GDEPe0dYTfigCOQympoLpLviYmdDBH1FKkakhD-EqmqmOOaM"/>
+</div>
+</td>
+<td class="px-6 py-4 text-sm text-slate-600 dark:text-slate-400">Yesterday</td>
+</tr>
+</tbody>
+</table>
+<div class="p-4 bg-slate-50 dark:bg-slate-800/50 border-t border-slate-100 dark:border-slate-800 text-center">
+<button class="text-xs font-bold text-slate-500 hover:text-primary transition-colors">View All 128 Tasks</button>
+</div>
+</div>
+</section>
+<section class="space-y-4">
+<div class="flex items-center justify-between">
+<h2 class="text-lg font-bold">Recent Activity</h2>
+<span class="material-symbols-outlined text-slate-400 cursor-pointer">refresh</span>
+</div>
+<div class="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 p-6 shadow-sm space-y-6">
+<div class="flex gap-4">
+<div class="flex-shrink-0 w-8 h-8 rounded-full bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center text-blue-600">
+<span class="material-symbols-outlined text-lg">sync</span>
+</div>
+<div class="flex-1">
+<p class="text-sm font-medium">Local database synchronized with master</p>
+<p class="text-[11px] text-slate-500 mt-0.5">2 minutes ago</p>
+</div>
+</div>
+<div class="flex gap-4">
+<div class="flex-shrink-0 w-8 h-8 rounded-full bg-green-100 dark:bg-green-900/30 flex items-center justify-center text-green-600">
+<span class="material-symbols-outlined text-lg">check_circle</span>
+</div>
+<div class="flex-1">
+<p class="text-sm font-medium">Project 'Zion Phase 2' approved</p>
+<p class="text-[11px] text-slate-500 mt-0.5">14 minutes ago</p>
+</div>
+</div>
+<div class="flex gap-4">
+<div class="flex-shrink-0 w-8 h-8 rounded-full bg-amber-100 dark:bg-amber-900/30 flex items-center justify-center text-amber-600">
+<span class="material-symbols-outlined text-lg">warning</span>
+</div>
+<div class="flex-1">
+<p class="text-sm font-medium">Server cooling alert in DC-East</p>
+<p class="text-[11px] text-slate-500 mt-0.5">45 minutes ago</p>
+</div>
+</div>
+<div class="flex gap-4">
+<div class="flex-shrink-0 w-8 h-8 rounded-full bg-purple-100 dark:bg-purple-900/30 flex items-center justify-center text-purple-600">
+<span class="material-symbols-outlined text-lg">person_add</span>
+</div>
+<div class="flex-1">
+<p class="text-sm font-medium">New team member added to Projects</p>
+<p class="text-[11px] text-slate-500 mt-0.5">1 hour ago</p>
+</div>
+</div>
+<button class="w-full py-2 text-xs font-bold text-slate-400 bg-slate-50 dark:bg-slate-800 rounded-lg hover:text-primary transition-colors">
+                                Load Older Activity
+                            </button>
+</div>
+</section>
+</div>
+</div>
+<footer class="px-8 py-3 bg-white dark:bg-background-dark border-t border-slate-200 dark:border-slate-800 flex justify-between items-center shrink-0">
+<div class="flex items-center gap-4">
+<div class="flex items-center gap-1.5 px-2 py-1 bg-green-100 dark:bg-green-900/20 text-green-600 dark:text-green-400 rounded-lg">
+<span class="material-symbols-outlined text-sm">wifi</span>
+<span class="text-[10px] font-bold uppercase">Online</span>
+</div>
+<span class="text-[10px] text-slate-500">Storage Usage: 14% (Offline Data)</span>
+</div>
+<div class="flex items-center gap-4 text-slate-400">
+<a class="text-[10px] hover:text-primary uppercase font-bold tracking-wider" href="#">Support Docs</a>
+<a class="text-[10px] hover:text-primary uppercase font-bold tracking-wider" href="#">Release v2.4.1</a>
+</div>
+</footer>
+</main>
+</div>
+</body></html>

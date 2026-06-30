@@ -13,7 +13,7 @@ import {
   WifiOff,
   RefreshCw,
 } from "lucide-react";
-import { signOut } from "@/lib/auth-client";
+import { useSignOut } from "@/hooks/use-mutations/auth-mutations";
 import { useSyncStatus } from "@/hooks/use-sync-status";
 import {
   Sidebar,
@@ -65,6 +65,7 @@ const bottomNavItems = [
 export function AppSidebar() {
   const pathname = usePathname();
   const { isOnline, isSyncing, pendingChanges } = useSyncStatus();
+  const signOut = useSignOut();
 
   return (
     <Sidebar>
@@ -162,7 +163,7 @@ export function AppSidebar() {
         <Button
           variant="ghost"
           className="w-full justify-start text-sidebar-foreground hover:bg-sidebar-accent"
-          onClick={() => signOut()}
+          onClick={() => signOut.mutate()}
         >
           <LogOut className="mr-2 size-4" />
           Sign out

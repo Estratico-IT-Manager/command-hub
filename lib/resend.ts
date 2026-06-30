@@ -1,13 +1,13 @@
 import { Resend } from "resend";
+import { env } from "./env";
 
- 
 declare global {
-    var resend:Resend | undefined;
+  var resend: Resend | undefined;
 }
 
-const resendClient = globalThis.resend || new Resend(process.env.RESEND_API_KEY);
+const resendClient = globalThis.resend || new Resend(env.RESEND_API_KEY);
 
-if (process.env.NODE_ENV !== 'production') {
+if (env.NODE_ENV !== "production") {
   globalThis.resend = resendClient;
 }
 export const resend = resendClient;

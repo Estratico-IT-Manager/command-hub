@@ -1,7 +1,6 @@
 'use client'
 
 import { useState } from 'react'
-import { useRouter } from 'next/navigation'
 import { Plus } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -16,8 +15,7 @@ import {
 } from '@/components/ui/dialog'
 import { FieldGroup, Field, FieldLabel, FieldError } from '@/components/ui/field'
 import { Spinner } from '@/components/ui/spinner'
-import { offlineDb, generateOfflineId } from '@/lib/offline-db'
-import { syncEngine } from '@/lib/sync-engine'
+import { useCreateTeam } from '@/hooks/use-mutations/team-mutations'
 
 function generateSlug(name: string): string {
   return name
@@ -27,12 +25,11 @@ function generateSlug(name: string): string {
 }
 
 export function CreateTeamDialog() {
-  const router = useRouter()
+  const createTeam = useCreateTeam()
   const [open, setOpen] = useState(false)
   const [name, setName] = useState('')
   const [slug, setSlug] = useState('')
   const [error, setError] = useState('')
-  const [isLoading, setIsLoading] = useState(false)
 
   function handleNameChange(value: string) {
     setName(value)
@@ -60,46 +57,19 @@ export function CreateTeamDialog() {
       return
     }
 
-    setIsLoading(true)
-
-    try {
-      const teamId = generateOfflineId()
-
-      // Save to local database immediately
-      await offlineDb.teams.add({
-        id: teamId,
-        name: name.trim(),
-        slug: slug.trim(),
-        logo:"",
-        metadata:"",
-        createdAt:"",
-        updatedAt:"",
-        synced: false,
-        pendingSync: true
-      })
-
-      // Queue for sync
-      if (syncEngine) {
-        await syncEngine.queueChange({
-          tableName: 'team',
-          recordId: teamId,
-          action: 'create',
-          payload: {
-            name: name.trim(),
-            slug: slug.trim()
-          }
-        })
+    createTeam.mutate(
+      { name: name.trim(), slug: slug.trim() },
+      {
+        onSuccess: () => {
+          setOpen(false)
+          setName('')
+          setSlug('')
+        },
+        onError: (err) => {
+          setError(err.message)
+        },
       }
-
-      setOpen(false)
-      setName('')
-      setSlug('')
-      router.refresh()
-    } catch {
-      setError('Failed to create team')
-    } finally {
-      setIsLoading(false)
-    }
+    )
   }
 
   return (
@@ -146,8 +116,8 @@ export function CreateTeamDialog() {
             <Button type="button" variant="outline" onClick={() => setOpen(false)}>
               Cancel
             </Button>
-            <Button type="submit" disabled={isLoading}>
-              {isLoading ? <Spinner className="mr-2" /> : null}
+            <Button type="submit" disabled={createTeam.isPending}>
+              {createTeam.isPending ? <Spinner className="mr-2" /> : null}
               Create team
             </Button>
           </DialogFooter>

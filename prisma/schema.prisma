@@ -12,9 +12,15 @@ datasource db {
   provider = "postgresql"
 }
 
-enum Role {
-  OWNER
+enum UserRole {
+  SUPER_ADMIN
   ADMIN
+  EMPLOYEE
+  INTERN
+}
+
+enum TeamRole {
+  OWNER
   MEMBER
 }
 
@@ -59,7 +65,7 @@ model User {
   image           String?
   createdAt       DateTime      @default(now())
   updatedAt       DateTime      @updatedAt
-  role            Role?         @default(MEMBER)
+  role            UserRole?     @default(EMPLOYEE)
   bio             String?
   whatsappNumber  String?
   sessions        Session[]
@@ -70,6 +76,7 @@ model User {
   tasksAssigned   Task[]        @relation("AssignedTasks")
   tasksCreated    Task[]        @relation("CreatedTasks")
   syncLogs        SyncLog[]
+  auditLogs       audit_log[]
 
   @@unique([email])
   @@map("user")
@@ -144,7 +151,7 @@ model TeamMember {
   id        String   @id @default(uuid())
   teamId    String
   userId    String
-  role      Role     @default(MEMBER)
+  role      TeamRole @default(MEMBER)
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
   team      Team     @relation(fields: [teamId], references: [id], onDelete: Cascade)
@@ -160,7 +167,7 @@ model TeamInvitation {
   id         String           @id @default(uuid())
   teamId     String
   email      String
-  role       Role             @default(MEMBER)
+  role       TeamRole         @default(MEMBER)
   invitedBy  String
   status     InvitationStatus @default(PENDING)
   expiresAt  DateTime
@@ -221,17 +228,17 @@ model subscription {
   serviceName     String
   provider        String
   startDate       DateTime
-  lastPaymentDate DateTime
   frequency       SubscriptionFrequency
   cost            Float
   currency        String                @default("USD")
-  notes           String
+  notes           String?
   isActive        Boolean               @default(true)
   version         Int                   @default(1)
   isDeleted       Boolean               @default(false)
   createdAt       DateTime              @default(now())
   updatedAt       DateTime              @updatedAt
   team            Team                  @relation(fields: [teamId], references: [id], onDelete: Cascade)
+  history         subscription_history[]
 
   @@index([teamId])
   @@map("subscription")
@@ -250,4 +257,34 @@ model SyncLog {
   @@index([userId])
   @@index([tableName, recordId])
   @@map("syncLog")
+}
+
+model subscription_history {
+  id             String       @id @default(uuid())
+  subscriptionId String
+  transactionId  String
+  cost           Float
+  dayPaid        DateTime
+  createdAt      DateTime     @default(now())
+  subscription   subscription @relation(fields: [subscriptionId], references: [id], onDelete: Cascade)
+
+  @@index([subscriptionId])
+  @@map("subscription_history")
+}
+
+model audit_log {
+  id         String   @id @default(uuid())
+  userId     String
+  entityType String
+  entityId   String
+  action     String
+  oldValue   Json?
+  newValue   Json?
+  createdAt  DateTime @default(now())
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([entityType, entityId])
+  @@index([userId])
+  @@index([createdAt])
+  @@map("audit_log")
 }

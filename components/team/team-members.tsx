@@ -10,14 +10,15 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
-import { LucideIcon, MoreHorizontal, Shield, ShieldCheck, User } from 'lucide-react'
+import { LucideIcon, MoreHorizontal, ShieldCheck, User } from 'lucide-react'
 import { cn } from '@/lib/utils'
-import { Role } from '@/app/generated/prisma/enums'
+import { TeamRole } from '@/app/generated/prisma/enums'
+import { useUpdateMemberRole, useRemoveMember } from '@/hooks/use-mutations/team-mutations'
 
 interface TeamMember {
     id: string;
     userId: string;
-    role: Role;
+    role: TeamRole;
     createdAt: Date;
     user: {
         name: string;
@@ -32,20 +33,20 @@ interface TeamMembersProps {
   teamId: string
 }
 
-const roleIcons:Record<Role,LucideIcon> = {
+const roleIcons:Record<TeamRole,LucideIcon> = {
   "OWNER": ShieldCheck,
-  "ADMIN": Shield,
   "MEMBER": User
 }
 
-const roleColors:Record<Role,string> = {
+const roleColors:Record<TeamRole,string> = {
   "OWNER": 'bg-primary text-primary-foreground',
-  "ADMIN": 'bg-[var(--estratico-accent)] text-[var(--estratico-accent-foreground)]',
   "MEMBER": 'bg-muted text-muted-foreground'
 }
 
-export function TeamMembers({ members, currentUserId, userRole }: TeamMembersProps) {
-  const canManage = userRole === 'owner' || userRole === 'admin'
+export function TeamMembers({ members, currentUserId, userRole, teamId }: TeamMembersProps) {
+  const canManage = userRole === 'OWNER'
+  const updateMemberRole = useUpdateMemberRole(teamId)
+  const removeMember = useRemoveMember(teamId)
 
   return (
     <Card>
@@ -96,13 +97,10 @@ export function TeamMembers({ members, currentUserId, userRole }: TeamMembersPro
                         </Button>
                       </DropdownMenuTrigger>
                       <DropdownMenuContent align="end">
-                        {member.role === "MEMBER" && userRole === 'owner' && (
-                          <DropdownMenuItem>Promote to Admin</DropdownMenuItem>
-                        )}
-                        {member.role === "ADMIN" && userRole === 'owner' && (
-                          <DropdownMenuItem>Demote to Member</DropdownMenuItem>
-                        )}
-                        <DropdownMenuItem className="text-destructive">
+                        <DropdownMenuItem
+                          onClick={() => removeMember.mutate({ memberId: member.id })}
+                          className="text-destructive"
+                        >
                           Remove from team
                         </DropdownMenuItem>
                       </DropdownMenuContent>

@@ -3,7 +3,7 @@ import {
   SubscriptionFrequency, 
   TaskPriority, 
   TaskStatus, 
-  Role 
+  UserRole 
 } from '@/app/generated/prisma/enums'
 import Dexie, { type EntityTable } from 'dexie'
 
@@ -15,7 +15,7 @@ export interface LocalUser {
   email: string
   emailVerified: boolean
   image: string | null
-  role: Role | null
+  role: UserRole | null
   bio: string | null
   whatsappNumber: string | null
   createdAt: string // Stored as ISO string for Dexie compatibility
@@ -71,10 +71,9 @@ export interface LocalTask {
 export interface LocalSubscription {
   id: string
   teamId: string
-  serviceName: string // Mirrored from Prisma 'serviceName'
+  serviceName: string
   provider: string
   startDate: string
-  lastPaymentDate: string
   frequency: SubscriptionFrequency
   cost: number
   currency: string
@@ -88,12 +87,37 @@ export interface LocalSubscription {
   pendingSync?: boolean
 }
 
+export interface LocalSubscriptionHistory {
+  id: string
+  subscriptionId: string
+  transactionId: string
+  cost: number
+  dayPaid: string
+  createdAt: string
+  synced: boolean
+  pendingSync?: boolean
+}
+
+export interface LocalAuditLog {
+  id: string
+  userId: string
+  entityType: string
+  entityId: string
+  action: string
+  oldValue: any | null
+  newValue: any | null
+  createdAt: string
+  synced: boolean
+  pendingSync?: boolean
+}
+
 export interface SyncQueueItem {
   id?: number
-  tableName: 'user' | 'team' | 'project' | 'task' | 'subscription'
+  tableName: 'user' | 'team' | 'project' | 'task' | 'subscription' | 'subscription_history' | 'audit_log'
   recordId: string
   action: 'create' | 'update' | 'delete'
   payload: Record<string, any>
+  queryKey: string[]
   createdAt: string
   retries: number
 }
@@ -106,19 +130,23 @@ class EstraticoOfflineDB extends Dexie {
   projects!: EntityTable<LocalProject, 'id'>
   tasks!: EntityTable<LocalTask, 'id'>
   subscriptions!: EntityTable<LocalSubscription, 'id'>
+  subscription_history!: EntityTable<LocalSubscriptionHistory, 'id'>
+  audit_log!: EntityTable<LocalAuditLog, 'id'>
   syncQueue!: EntityTable<SyncQueueItem, 'id'>
 
   constructor() {
     super('EstraticoOfflineDB')
     
-    this.version(2).stores({
+    this.version(4).stores({
       // Primary Key followed by indexed fields
       users: 'id, &email, synced',
       teams: 'id, &slug, synced',
       projects: 'id, teamId, status, createdBy, synced',
       tasks: 'id, projectId, status, assignedTo, synced',
       subscriptions: 'id, teamId, synced',
-      syncQueue: '++id, tableName, recordId, action,retries'
+      subscription_history: 'id, subscriptionId, synced',
+      audit_log: 'id, entityType, entityId, userId, createdAt, synced',
+      syncQueue: '++id, tableName, recordId, action, retries'
     })
   }
 }
