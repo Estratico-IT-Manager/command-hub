@@ -12,13 +12,6 @@ datasource db {
   provider = "postgresql"
 }
 
-enum UserRole {
-  SUPER_ADMIN
-  ADMIN
-  EMPLOYEE
-  INTERN
-}
-
 enum TeamRole {
   OWNER
   MEMBER
@@ -58,14 +51,13 @@ enum SubscriptionFrequency {
 }
 
 model User {
-  id              String        @id @default(uuid())
+  id              String           @id @default(uuid())
   name            String
   email           String
-  emailVerified   Boolean       @default(false)
+  emailVerified   Boolean          @default(false)
   image           String?
-  createdAt       DateTime      @default(now())
-  updatedAt       DateTime      @updatedAt
-  role            UserRole?     @default(EMPLOYEE)
+  createdAt       DateTime         @default(now())
+  updatedAt       DateTime         @updatedAt
   bio             String?
   whatsappNumber  String?
   sessions        Session[]
@@ -73,13 +65,54 @@ model User {
   teamMemberships TeamMember[]
   invitationsSent TeamInvitation[]
   projectsCreated Project[]
-  tasksAssigned   Task[]        @relation("AssignedTasks")
-  tasksCreated    Task[]        @relation("CreatedTasks")
+  tasksAssigned   Task[]           @relation("AssignedTasks")
+  tasksCreated    Task[]           @relation("CreatedTasks")
   syncLogs        SyncLog[]
   auditLogs       audit_log[]
+  roleAssignments RoleAssignment[]
 
   @@unique([email])
   @@map("user")
+}
+
+model Role {
+  id          String           @id @default(cuid())
+  name        String           @unique
+  permissions RolePermission[]
+  assignments RoleAssignment[]
+
+  @@map("role")
+}
+
+model Permission {
+  id    String @id @default(cuid())
+  key   String @unique
+  roles RolePermission[]
+
+  @@map("permission")
+}
+
+model RolePermission {
+  roleId       String
+  permissionId String
+  role         Role       @relation(fields: [roleId], references: [id], onDelete: Cascade)
+  permission   Permission @relation(fields: [permissionId], references: [id], onDelete: Cascade)
+
+  @@id([roleId, permissionId])
+  @@index([permissionId])
+  @@map("rolePermission")
+}
+
+model RoleAssignment {
+  id     String @id @default(cuid())
+  userId String
+  roleId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  role   Role   @relation(fields: [roleId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([roleId])
+  @@map("roleAssignment")
 }
 
 model Session {

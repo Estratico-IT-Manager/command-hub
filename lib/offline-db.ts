@@ -2,8 +2,7 @@ import {
   ProjectStatus, 
   SubscriptionFrequency, 
   TaskPriority, 
-  TaskStatus, 
-  UserRole 
+  TaskStatus 
 } from '@/app/generated/prisma/enums'
 import Dexie, { type EntityTable } from 'dexie'
 
@@ -15,7 +14,7 @@ export interface LocalUser {
   email: string
   emailVerified: boolean
   image: string | null
-  role: UserRole | null
+  permissions: string[]
   bio: string | null
   whatsappNumber: string | null
   createdAt: string // Stored as ISO string for Dexie compatibility
