@@ -114,7 +114,7 @@ export default function RegisterPage() {
               {error && <FieldError>{error}</FieldError>}
             </FieldGroup>
           </CardContent>
-          <CardFooter className="flex flex-col gap-4">
+          <CardFooter className="flex flex-col gap-4 mt-4">
             <Button type="submit" className="w-full" disabled={register.isPending}>
               {register.isPending ? <Spinner className="mr-2" /> : null}
               Create account

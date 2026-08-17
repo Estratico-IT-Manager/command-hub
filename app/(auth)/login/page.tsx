@@ -79,7 +79,7 @@ export default function LoginPage() {
               {error && <FieldError>{error}</FieldError>}
             </FieldGroup>
           </CardContent>
-          <CardFooter className="flex flex-col gap-4">
+          <CardFooter className="flex flex-col gap-4 mt-4">
             <Button type="submit" className="w-full" disabled={login.isPending}>
               {login.isPending ? <Spinner className="mr-2" /> : null}
               Sign in
