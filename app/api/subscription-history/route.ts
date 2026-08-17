@@ -2,29 +2,15 @@ import prisma from "@/lib/prisma"
 import { auth } from "@/lib/auth"
 import { headers } from "next/headers"
 import { NextResponse } from "next/server"
-import {
-  canCreateSubscriptionHistory,
-  canUpdateSubscriptionHistory,
-  canDeleteSubscriptionHistory,
-  canViewSubscriptionHistory,
-  getUnauthorizedMessage,
-} from "@/lib/authorization"
-import { UserRole } from "@/app/generated/prisma/enums"
+import { TeamRole } from "@/app/generated/prisma/enums"
+import { can } from "@/lib/rbac"
+import { PERMISSIONS } from "@/lib/rbac/permissions"
 
 // GET /api/subscription-history?subscriptionId=xxx
 export async function GET(request: Request) {
   const session = await auth.api.getSession({ headers: await headers() })
   if (!session) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
-  }
-
-  const userRole = session.user.role as UserRole | null
-
-  if (!canViewSubscriptionHistory(userRole)) {
-    return NextResponse.json(
-      { error: getUnauthorizedMessage("view", "subscription history") },
-      { status: 403 }
-    )
   }
 
   const { searchParams } = new URL(request.url)
@@ -50,8 +36,8 @@ export async function GET(request: Request) {
       )
     }
 
-    // For non-SUPER_ADMIN users, check team membership
-    if (userRole !== UserRole.SUPER_ADMIN) {
+    // For users without global view permission, check team membership
+    if (!(await can(session.user.id, PERMISSIONS.SUBSCRIPTION_HISTORY_VIEW))) {
       const membership = await prisma.teamMember.findUnique({
         where: {
           teamId_userId: {
@@ -91,7 +77,7 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
   }
 
-  const userRole = session.user.role as UserRole | null
+  const hasPermission = await can(session.user.id, PERMISSIONS.SUBSCRIPTION_HISTORY_CREATE)
 
   try {
     const body = await request.json()
@@ -118,8 +104,7 @@ export async function POST(request: Request) {
     }
 
     // Check team membership and role
-    let teamRole = null
-    if (userRole !== UserRole.SUPER_ADMIN) {
+    if (!hasPermission) {
       const membership = await prisma.teamMember.findUnique({
         where: {
           teamId_userId: {
@@ -135,14 +120,13 @@ export async function POST(request: Request) {
           { status: 403 }
         )
       }
-      teamRole = membership.role
-    }
 
-    if (!canCreateSubscriptionHistory(userRole, teamRole)) {
-      return NextResponse.json(
-        { error: getUnauthorizedMessage("create", "subscription history") },
-        { status: 403 }
-      )
+      if (membership.role !== TeamRole.OWNER) {
+        return NextResponse.json(
+          { error: "You do not have permission to create subscription history" },
+          { status: 403 }
+        )
+      }
     }
 
     // Use the subscription's current cost (cost at time of payment)
@@ -183,7 +167,7 @@ export async function PUT(request: Request) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
   }
 
-  const userRole = session.user.role as UserRole | null
+  const hasPermission = await can(session.user.id, PERMISSIONS.SUBSCRIPTION_HISTORY_EDIT)
 
   try {
     const body = await request.json()
@@ -210,8 +194,7 @@ export async function PUT(request: Request) {
     }
 
     // Check team membership and role
-    let teamRole = null
-    if (userRole !== UserRole.SUPER_ADMIN) {
+    if (!hasPermission) {
       const membership = await prisma.teamMember.findUnique({
         where: {
           teamId_userId: {
@@ -227,14 +210,13 @@ export async function PUT(request: Request) {
           { status: 403 }
         )
       }
-      teamRole = membership.role
-    }
 
-    if (!canUpdateSubscriptionHistory(userRole, teamRole)) {
-      return NextResponse.json(
-        { error: getUnauthorizedMessage("update", "subscription history") },
-        { status: 403 }
-      )
+      if (membership.role !== TeamRole.OWNER) {
+        return NextResponse.json(
+          { error: "You do not have permission to update subscription history" },
+          { status: 403 }
+        )
+      }
     }
 
     const updated = await prisma.subscription_history.update({
@@ -275,7 +257,7 @@ export async function DELETE(request: Request) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
   }
 
-  const userRole = session.user.role as UserRole | null
+  const hasPermission = await can(session.user.id, PERMISSIONS.SUBSCRIPTION_HISTORY_DELETE)
 
   try {
     const { searchParams } = new URL(request.url)
@@ -302,8 +284,7 @@ export async function DELETE(request: Request) {
     }
 
     // Check team membership and role
-    let teamRole = null
-    if (userRole !== UserRole.SUPER_ADMIN) {
+    if (!hasPermission) {
       const membership = await prisma.teamMember.findUnique({
         where: {
           teamId_userId: {
@@ -319,14 +300,13 @@ export async function DELETE(request: Request) {
           { status: 403 }
         )
       }
-      teamRole = membership.role
-    }
 
-    if (!canDeleteSubscriptionHistory(userRole, teamRole)) {
-      return NextResponse.json(
-        { error: getUnauthorizedMessage("delete", "subscription history") },
-        { status: 403 }
-      )
+      if (membership.role !== TeamRole.OWNER) {
+        return NextResponse.json(
+          { error: "You do not have permission to delete subscription history" },
+          { status: 403 }
+        )
+      }
     }
 
     await prisma.subscription_history.delete({

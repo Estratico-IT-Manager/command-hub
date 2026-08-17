@@ -6,7 +6,6 @@ import {
   Prisma,
   Project,
   ProjectStatus,
-  UserRole,
   TeamRole,
   subscription,
   SubscriptionFrequency,
@@ -15,7 +14,38 @@ import {
   TaskStatus,
   Team,
 } from "@/app/generated/prisma/client";
-import { Prisma } from "@/app/generated/prisma/client";
+import { can } from "@/lib/rbac";
+import { PERMISSIONS } from "@/lib/rbac/permissions";
+
+class SyncForbiddenError extends Error {}
+
+async function assertTeamMember(userId: string, teamId: string) {
+  const membership = await prisma.teamMember.findUnique({
+    where: {
+      teamId_userId: {
+        teamId,
+        userId,
+      },
+    },
+  });
+
+  if (!membership) {
+    throw new SyncForbiddenError(
+      "Unauthorized: You do not have access to this team",
+    );
+  }
+
+  return membership;
+}
+
+async function assertTeamOwner(userId: string, teamId: string) {
+  const membership = await assertTeamMember(userId, teamId);
+  if (membership.role !== TeamRole.OWNER) {
+    throw new SyncForbiddenError(
+      "Unauthorized: Only team OWNER can perform this action",
+    );
+  }
+}
 
 export async function GET(request: Request) {
   const session = await auth.api.getSession({ headers: await headers() });
@@ -23,15 +53,15 @@ export async function GET(request: Request) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  const userRole = session.user.role as UserRole | null;
+  const canViewAll = await can(session.user.id, PERMISSIONS.SYNC_VIEW);
   const { searchParams } = new URL(request.url);
   const since = searchParams.get("since");
 
   try {
     let teamIds: string[];
 
-    // SUPER_ADMIN can access all data
-    if (userRole === UserRole.SUPER_ADMIN) {
+    // Users with sync.view can access all data
+    if (canViewAll) {
       const allTeams = await prisma.team.findMany({
         select: { id: true },
       });
@@ -193,7 +223,9 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  const userRole = session.user.role as UserRole | null;
+  if (!(await can(session.user.id, PERMISSIONS.SYNC_RUN))) {
+    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  }
 
   try {
     const { tableName, recordId, action, payload } = await request.json();
@@ -209,6 +241,30 @@ export async function POST(request: Request) {
       },
     });
 
+    const permissionBySyncOp: Record<string, string> = {
+      "task.create": PERMISSIONS.TASK_CREATE,
+      "task.update": PERMISSIONS.TASK_EDIT,
+      "task.delete": PERMISSIONS.TASK_DELETE,
+      "project.create": PERMISSIONS.PROJECT_CREATE,
+      "project.update": PERMISSIONS.PROJECT_EDIT,
+      "project.delete": PERMISSIONS.PROJECT_DELETE,
+      "subscription.create": PERMISSIONS.SUBSCRIPTION_CREATE,
+      "subscription.update": PERMISSIONS.SUBSCRIPTION_EDIT,
+      "subscription.delete": PERMISSIONS.SUBSCRIPTION_DELETE,
+      "subscription_history.create": PERMISSIONS.SUBSCRIPTION_HISTORY_CREATE,
+      "subscription_history.update": PERMISSIONS.SUBSCRIPTION_HISTORY_EDIT,
+      "subscription_history.delete": PERMISSIONS.SUBSCRIPTION_HISTORY_DELETE,
+      "team.create": PERMISSIONS.TEAM_CREATE,
+      "team.update": PERMISSIONS.TEAM_EDIT,
+      "team.delete": PERMISSIONS.TEAM_DELETE,
+    };
+
+    const permissionForAction = permissionBySyncOp[`${tableName}.${action}`];
+
+    const hasPermission = permissionForAction
+      ? await can(session.user.id, permissionForAction)
+      : false;
+
     let result;
 
     switch (tableName) {
@@ -218,7 +274,7 @@ export async function POST(request: Request) {
           recordId,
           payload,
           session.user.id,
-          userRole,
+          hasPermission,
         );
         break;
       case "project":
@@ -227,7 +283,7 @@ export async function POST(request: Request) {
           recordId,
           payload,
           session.user.id,
-          userRole,
+          hasPermission,
         );
         break;
       case "subscription":
@@ -237,7 +293,7 @@ export async function POST(request: Request) {
           recordId,
           payload,
           session.user.id,
-          userRole,
+          hasPermission,
         );
         break;
       case "subscription_history":
@@ -246,7 +302,7 @@ export async function POST(request: Request) {
           recordId,
           payload,
           session.user.id,
-          userRole,
+          hasPermission,
         );
         break;
       case "team":
@@ -255,7 +311,7 @@ export async function POST(request: Request) {
           recordId,
           payload,
           session.user.id,
-          userRole,
+          hasPermission,
         );
         break;
       default:
@@ -267,6 +323,9 @@ export async function POST(request: Request) {
 
     return NextResponse.json({ success: true, data: result });
   } catch (error) {
+    if (error instanceof SyncForbiddenError) {
+      return NextResponse.json({ error: error.message }, { status: 403 });
+    }
     console.error("Sync push error:", error);
     return NextResponse.json({ error: "Failed to sync data" }, { status: 500 });
   }
@@ -277,7 +336,7 @@ async function handleTaskSync(
   recordId: string,
   payload: Record<string, unknown>,
   userId: string,
-  userRole: UserRole | null,
+  hasPermission: boolean,
 ) {
   switch (action) {
     case "create": {
@@ -304,6 +363,17 @@ async function handleTaskSync(
         dueDate: string;
         position: number;
       };
+
+      const project = await prisma.project.findUnique({
+        where: { id: projectId },
+        select: { teamId: true },
+      });
+      if (!project) {
+        throw new SyncForbiddenError("Project not found");
+      }
+      if (!hasPermission) {
+        await assertTeamMember(userId, project.teamId);
+      }
 
       const result = await prisma.task.create({
         data: {
@@ -335,7 +405,18 @@ async function handleTaskSync(
     case "update": {
       const existing = await prisma.task.findUnique({
         where: { id: recordId },
+        include: {
+          project: {
+            select: { teamId: true },
+          },
+        },
       });
+      if (!existing) {
+        throw new SyncForbiddenError("Task not found");
+      }
+      if (!hasPermission) {
+        await assertTeamMember(userId, existing.project.teamId);
+      }
 
       const {
         projectId,
@@ -389,7 +470,18 @@ async function handleTaskSync(
     case "delete": {
       const existing = await prisma.task.findUnique({
         where: { id: recordId },
+        include: {
+          project: {
+            select: { teamId: true },
+          },
+        },
       });
+      if (!existing) {
+        throw new SyncForbiddenError("Task not found");
+      }
+      if (!hasPermission) {
+        await assertTeamMember(userId, existing.project.teamId);
+      }
 
       await prisma.task.delete({
         where: {
@@ -421,7 +513,7 @@ async function handleProjectSync(
   recordId: string,
   payload: Record<string, unknown>,
   userId: string,
-  userRole: UserRole | null,
+  hasPermission: boolean,
 ) {
   switch (action) {
     case "create": {
@@ -436,9 +528,13 @@ async function handleProjectSync(
         status: ProjectStatus;
       };
 
+if (!hasPermission) {
+        await assertTeamMember(userId, teamId);
+      }
+
       const projectData: Prisma.ProjectCreateInput = {
         name,
-        description:description || "",
+        description: description || "",
         status,
         creator: { connect: { id: userId } },
         team: {
@@ -468,7 +564,14 @@ async function handleProjectSync(
     case "update": {
       const existing = await prisma.project.findUnique({
         where: { id: recordId },
+        select: { teamId: true },
       });
+      if (!existing) {
+        throw new SyncForbiddenError("Project not found");
+      }
+      if (!hasPermission) {
+        await assertTeamMember(userId, existing.teamId);
+      }
 
       const { teamId, name, description, status } = payload as Partial<{
         teamId: string;
@@ -506,7 +609,14 @@ async function handleProjectSync(
     case "delete": {
       const existing = await prisma.project.findUnique({
         where: { id: recordId },
+        select: { teamId: true },
       });
+      if (!existing) {
+        throw new SyncForbiddenError("Project not found");
+      }
+      if (!hasPermission) {
+        await assertTeamMember(userId, existing.teamId);
+      }
 
       await prisma.project.delete({
         where: {
@@ -537,13 +647,17 @@ async function handleSubscriptionSync(
   recordId: string,
   payload: Record<string, any>,
   userId: string,
-  userRole: UserRole | null,
+  hasPermission: boolean,
 ) {
   // Logic for handling offline IDs remains the same
   const id = recordId.startsWith("offline_") ? crypto.randomUUID() : recordId;
 
   switch (action) {
     case "create": {
+      if (!hasPermission) {
+        await assertTeamOwner(userId, payload.teamId);
+      }
+
       const result = await prisma.subscription.create({
         data: {
           id: id,
@@ -578,19 +692,27 @@ async function handleSubscriptionSync(
     case "update": {
       const existing = await prisma.subscription.findUnique({
         where: { id: recordId },
+        select: { teamId: true },
       });
+      if (!existing) {
+        throw new SyncForbiddenError("Subscription not found");
+      }
+      if (!hasPermission) {
+        await assertTeamOwner(userId, existing.teamId);
+      }
 
       const result = await prisma.subscription.update({
         where: { id: recordId },
         data: {
-          ...data,
-          notes: data.notes || "",
-          version: data.version + 1,
-          cost: Number(data.cost),
-          startDate: data.startDate ? new Date(data.startDate) : undefined,
-          lastPaymentDate: data.lastPaymentDate
-            ? new Date(data.lastPaymentDate)
-            : undefined,
+          serviceName: payload.name,
+          provider: payload.provider,
+          cost: Number(payload.cost),
+          currency: payload.currency,
+          frequency: payload.billingCycle as SubscriptionFrequency,
+          isActive: payload.isActive,
+          notes: payload.notes || "",
+          version: Number(payload.version ?? 0) + 1,
+          startDate: payload.startDate ? new Date(payload.startDate) : undefined,
         },
       });
 
@@ -612,7 +734,14 @@ async function handleSubscriptionSync(
     case "delete": {
       const existing = await prisma.subscription.findUnique({
         where: { id: recordId },
+        select: { teamId: true },
       });
+      if (!existing) {
+        throw new SyncForbiddenError("Subscription not found");
+      }
+      if (!hasPermission) {
+        await assertTeamOwner(userId, existing.teamId);
+      }
 
       await prisma.subscription.delete({
         where: { id: recordId },
@@ -642,23 +771,24 @@ async function handleTeamSync(
   recordId: string,
   payload: Record<string, any>,
   userId: string,
-  userRole: UserRole | null,
+  hasPermission: boolean,
 ) {
   const id = recordId.startsWith("offline_") ? crypto.randomUUID() : recordId;
 
   switch (action) {
     case "create": {
-      const result = await prisma.team.upsert({
-        where:{
-          slug:payload.slug
-        },
-        update: {
-          name: payload.name,
-          slug: payload.slug,
-          logo: payload.logo || "",
-          metadata: payload.metadata || {},
-        },
-        create: {
+      const existing = await prisma.team.findUnique({
+        where: { slug: payload.slug },
+      });
+      if (existing) {
+        throw new SyncForbiddenError(
+          "Unauthorized: A team with this slug already exists",
+        );
+      }
+
+      const result = await prisma.team.create({
+        data: {
+          id: id,
           name: payload.name,
           slug: payload.slug,
           logo: payload.logo || "",
@@ -693,6 +823,12 @@ async function handleTeamSync(
       const existing = await prisma.team.findUnique({
         where: { id: recordId },
       });
+      if (!existing) {
+        throw new SyncForbiddenError("Team not found");
+      }
+      if (!hasPermission) {
+        await assertTeamOwner(userId, recordId);
+      }
 
       const result = await prisma.team.update({
         where: { id: recordId },
@@ -723,6 +859,12 @@ async function handleTeamSync(
       const existing = await prisma.team.findUnique({
         where: { id: recordId },
       });
+      if (!existing) {
+        throw new SyncForbiddenError("Team not found");
+      }
+      if (!hasPermission) {
+        await assertTeamOwner(userId, recordId);
+      }
 
       await prisma.team.delete({
         where: { id: recordId },
@@ -752,10 +894,10 @@ async function handleSubscriptionHistorySync(
   recordId: string,
   payload: Record<string, any>,
   userId: string,
-  userRole: UserRole | null,
+  hasPermission: boolean,
 ) {
-  // SUPER_ADMIN can modify any subscription history
-  if (userRole !== UserRole.SUPER_ADMIN) {
+  // Users with the subscription_history permission can modify any subscription history
+  if (!hasPermission) {
     // For OWNER, check team ownership via subscription
     if (payload.subscriptionId) {
       const subscription = await prisma.subscription.findUnique({
@@ -764,7 +906,7 @@ async function handleSubscriptionHistorySync(
       })
 
       if (!subscription) {
-        throw new Error("Subscription not found");
+        throw new SyncForbiddenError("Subscription not found");
       }
 
       const membership = await prisma.teamMember.findUnique({
@@ -777,10 +919,10 @@ async function handleSubscriptionHistorySync(
       })
 
       if (!membership || membership.role !== TeamRole.OWNER) {
-        throw new Error("Unauthorized: Only SUPER_ADMIN and team OWNER can modify subscription history");
+        throw new SyncForbiddenError("Unauthorized: Only users with the subscription_history permission and team OWNERs can modify subscription history");
       }
     } else {
-      throw new Error("Unauthorized: Only SUPER_ADMIN and team OWNER can modify subscription history");
+      throw new SyncForbiddenError("Unauthorized: Only users with the subscription_history permission and team OWNERs can modify subscription history");
     }
   }
 
