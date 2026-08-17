@@ -3,6 +3,7 @@ import { auth } from "@/lib/auth";
 import { headers } from "next/headers";
 import { NextResponse } from "next/server";
 import {
+  Prisma,
   Project,
   ProjectStatus,
   UserRole,
@@ -435,14 +436,20 @@ async function handleProjectSync(
         status: ProjectStatus;
       };
 
-      const result = await prisma.project.create({
-        data: {
-          teamId,
-          name,
-          description,
-          status,
-          createdBy: userId,
+      const projectData: Prisma.ProjectCreateInput = {
+        name,
+        description:description || "",
+        status,
+        creator: { connect: { id: userId } },
+        team: {
+          connect: {
+            id: teamId,
+          },
         },
+      };
+
+      const result = await prisma.project.create({
+        data: projectData,
       });
 
       // Create audit log entry
@@ -550,7 +557,7 @@ async function handleSubscriptionSync(
             ? new Date(payload.startDate)
             : new Date(),
           notes: payload.notes || "",
-          isActive: payload.status !== "inactive",
+          isActive: payload.isActive,
         },
       });
 
@@ -576,13 +583,14 @@ async function handleSubscriptionSync(
       const result = await prisma.subscription.update({
         where: { id: recordId },
         data: {
-          serviceName: payload.name,
-          provider: payload.provider,
-          cost: payload.cost,
-          currency: payload.currency,
-          frequency: payload.billingCycle as SubscriptionFrequency,
-          isActive: payload.status !== "inactive",
-          notes: payload.notes,
+          ...data,
+          notes: data.notes || "",
+          version: data.version + 1,
+          cost: Number(data.cost),
+          startDate: data.startDate ? new Date(data.startDate) : undefined,
+          lastPaymentDate: data.lastPaymentDate
+            ? new Date(data.lastPaymentDate)
+            : undefined,
         },
       });
 
@@ -644,7 +652,7 @@ async function handleTeamSync(
         where:{
           slug:payload.slug
         },
-        update:{
+        update: {
           name: payload.name,
           slug: payload.slug,
           logo: payload.logo || "",

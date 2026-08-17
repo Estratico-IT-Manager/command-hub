@@ -124,7 +124,7 @@ export function SubscriptionsList({ subscriptions }: SubscriptionsListProps) {
           Add your first subscription to start tracking costs
         </EmptyDescription>
       </Empty>
-    )
+    );
   }
 
   return (

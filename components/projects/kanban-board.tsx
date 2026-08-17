@@ -126,7 +126,7 @@ export function KanbanBoard({ projectId, initialTasks, teamMembers }: KanbanBoar
 
   return (
     <DragDropContext onDragEnd={handleDragEnd}>
-      <div className="flex gap-4 overflow-x-auto pb-4">
+      <div className="flex gap-4 overflow-x-auto pb-4 h-full min-w-0">
         {columns.map((column) => (
           <div key={column.id} className="shrink-0 w-72">
             <Card className={cn("border-t-4", columnColors[column.id])}>

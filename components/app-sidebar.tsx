@@ -72,10 +72,18 @@ export function AppSidebar() {
       <SidebarHeader className="border-b border-sidebar-border">
         <Link href="/dashboard" className="flex items-center gap-2 px-2 py-1">
           <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-sidebar-primary text-sidebar-primary-foreground">
-            <span className="text-sm font-bold">E</span>
+            <span className="text-sm font-bold">
+              {session?.user.name
+                ? session.user.name
+                    .split(" ")
+                    .map((n) => n[0])
+                    .join("")
+                    .toUpperCase()
+                : "E"}
+            </span>
           </div>
           <span className="text-lg font-semibold text-sidebar-foreground">
-            Estratico
+            {session?.user.name || "Estratico"}
           </span>
         </Link>
       </SidebarHeader>
@@ -84,7 +92,7 @@ export function AppSidebar() {
         <SidebarGroup>
           <SidebarGroupLabel>Main Menu</SidebarGroupLabel>
           <SidebarGroupContent>
-            <SidebarMenu>
+            <SidebarMenu className="overflow-x-hidden">
               {mainNavItems.map((item) => (
                 <SidebarMenuItem key={item.href}>
                   <SidebarMenuButton
