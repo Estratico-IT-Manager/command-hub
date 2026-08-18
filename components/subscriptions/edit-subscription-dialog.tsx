@@ -43,7 +43,7 @@ export function EditSubscriptionDialog({ subscription: sub, open, onOpenChange }
   const [startDate, setStartDate] = useState(
     sub.startDate ? new Date(sub.startDate).toISOString().split('T')[0] : ''
   )
-  const [notes, setNotes] = useState(sub.notes)
+  const [notes, setNotes] = useState(sub.notes ?? '')
   const [error, setError] = useState('')
   const [isPending, setIsPending] = useState(false)
 
@@ -103,7 +103,7 @@ export function EditSubscriptionDialog({ subscription: sub, open, onOpenChange }
       setCost(String(sub.cost))
       setFrequency(sub.frequency)
       setStartDate(sub.startDate ? new Date(sub.startDate).toISOString().split('T')[0] : '')
-      setNotes(sub.notes)
+      setNotes(sub.notes ?? '')
       setError('')
     }
     onOpenChange(newOpen)

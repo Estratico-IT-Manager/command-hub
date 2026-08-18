@@ -2,8 +2,8 @@ import prisma from "@/lib/prisma"
 import { auth } from "@/lib/auth"
 import { headers } from "next/headers"
 import { NextResponse } from "next/server"
-import { canViewAuditLog, getUnauthorizedMessage } from "@/lib/authorization"
-import { UserRole } from "@/app/generated/prisma/enums"
+import { can } from "@/lib/rbac"
+import { PERMISSIONS } from "@/lib/rbac/permissions"
 
 // GET /api/audit-log
 // Query params:
@@ -19,10 +19,9 @@ export async function GET(request: Request) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
   }
 
-  const userRole = session.user.role as UserRole | null
-
-  // For audit log viewing, check if user is SUPER_ADMIN or OWNER of any team
-  if (userRole !== UserRole.SUPER_ADMIN) {
+  // Users with audit.view permission see everything; otherwise team owners see their teams' logs
+  const isGlobalAuditViewer = await can(session.user.id, PERMISSIONS.AUDIT_LOG_VIEW)
+  if (!isGlobalAuditViewer) {
     const memberships = await prisma.teamMember.findMany({
       where: { userId: session.user.id },
       select: { role: true },
@@ -30,7 +29,7 @@ export async function GET(request: Request) {
     const isOwner = memberships.some(m => m.role === 'OWNER')
     if (!isOwner) {
       return NextResponse.json(
-        { error: getUnauthorizedMessage("view", "audit log") },
+        { error: "You do not have permission to view audit log" },
         { status: 403 }
       )
     }
@@ -47,8 +46,8 @@ export async function GET(request: Request) {
   try {
     const where: Record<string, any> = {}
 
-    // For non-SUPER_ADMIN users, only show audit logs for their teams
-    if (userRole !== UserRole.SUPER_ADMIN) {
+    // For non-global viewers, only show audit logs for their teams
+    if (!isGlobalAuditViewer) {
       // Get user's team IDs
       const teamMembers = await prisma.teamMember.findMany({
         where: { userId: session.user.id },

@@ -21,13 +21,13 @@ export default async function DashboardLayout({
   return (
     <SidebarProvider>
       <AppSidebar />
-      <SidebarInset>
+      <SidebarInset className="min-w-0">
         <header className="flex h-14 items-center gap-4 border-b px-4 lg:px-6">
           <SidebarTrigger className="-ml-1" />
           <div className='grow'/>
           <ThemeToggle />
         </header>
-        <main className="flex-1 overflow-auto p-4 lg:p-6">
+        <main className="flex-1 overflow-auto min-w-0 p-4 lg:p-6">
           {children}
         </main>
       </SidebarInset>

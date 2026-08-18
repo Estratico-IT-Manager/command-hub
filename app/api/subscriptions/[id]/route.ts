@@ -2,7 +2,8 @@ import { NextResponse } from 'next/server'
 import { headers } from 'next/headers'
 import { auth } from '@/lib/auth'
 import prisma from '@/lib/prisma'
-import { UserRole } from '@/app/generated/prisma/enums'
+import { can } from '@/lib/rbac'
+import { PERMISSIONS } from '@/lib/rbac/permissions'
 
 export async function GET(
   request: Request,
@@ -14,7 +15,6 @@ export async function GET(
   }
 
   const { id } = await params
-  const userRole = session.user.role as UserRole | null
 
   try {
     const subscription = await prisma.subscription.findUnique({
@@ -29,8 +29,8 @@ export async function GET(
       return NextResponse.json({ error: 'Subscription not found' }, { status: 404 })
     }
 
-    // SUPER_ADMIN can access all data
-    if (userRole !== UserRole.SUPER_ADMIN) {
+    // Users with global view permission can access all data
+    if (!(await can(session.user.id, PERMISSIONS.SUBSCRIPTION_VIEW))) {
       const membership = await prisma.teamMember.findUnique({
         where: {
           teamId_userId: {
@@ -62,7 +62,6 @@ export async function DELETE(
   }
 
   const { id } = await params
-  const userRole = session.user.role as UserRole | null
 
   try {
     const subscription = await prisma.subscription.findUnique({
@@ -74,8 +73,8 @@ export async function DELETE(
       return NextResponse.json({ error: 'Subscription not found' }, { status: 404 })
     }
 
-    // SUPER_ADMIN can delete any subscription
-    if (userRole === UserRole.SUPER_ADMIN) {
+    // Users with global manage permission can delete any subscription
+    if (await can(session.user.id, PERMISSIONS.SUBSCRIPTION_DELETE)) {
       const deleted = await prisma.subscription.update({
         where: { id },
         data: { isDeleted: true },

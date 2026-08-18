@@ -1,9 +1,11 @@
 import { betterAuth } from 'better-auth'
+import { customSession } from "better-auth/plugins";
 import { prismaAdapter } from "better-auth/adapters/prisma";
 import prisma from './prisma';
-import { UserRole } from '@/app/generated/prisma/enums';
-import { ALLOWED_DOMAIN } from './constants';
+import { ALLOWED_DOMAIN, SUPER_ADMIN_EMAIL } from './constants';
 import { env } from './env';
+import { DEFAULT_ROLE_NAME, ROLES } from './rbac/permissions';
+import { getPermissionSummary } from './rbac';
 
 
 export const auth = betterAuth({
@@ -11,6 +13,24 @@ export const auth = betterAuth({
     provider:"postgresql"
   }),
 
+  databaseHooks: {
+    user: {
+      create: {
+        after: async (user) => {
+          if (user.email === SUPER_ADMIN_EMAIL) {
+            const role = await prisma.role.findUnique({
+              where: { name: ROLES.SYSTEM_ADMIN }
+            })
+            if (role) {
+              await prisma.roleAssignment.create({
+                data: { userId: user.id, roleId: role.id }
+              })
+            }
+          }
+        }
+      }
+    }
+  },
   emailAndPassword: {
     enabled: true,
     async sendResetPassword({user,url}) {
@@ -28,10 +48,6 @@ export const auth = betterAuth({
   },
   user: {
     additionalFields: {
-      role: {
-        type: 'string',
-        defaultValue: UserRole.EMPLOYEE
-      },
       bio:{
         type:"string",
       },
@@ -40,6 +56,30 @@ export const auth = betterAuth({
       }
     }
   },
+  plugins: [
+    customSession(async ({ user, session }) => {
+      // Auto-assign default role on first session if user has no roles
+      const existing = await prisma.roleAssignment.findFirst({
+        where: { userId: user.id }
+      })
+      if (!existing) {
+        const defaultRole = await prisma.role.findUnique({
+          where: { name: DEFAULT_ROLE_NAME }
+        })
+        if (defaultRole) {
+          await prisma.roleAssignment.create({
+            data: { userId: user.id, roleId: defaultRole.id }
+          })
+        }
+      }
+
+      const summary = await getPermissionSummary(user.id)
+      return {
+        user: { ...user, permissions: summary.permissions },
+        session,
+      }
+    }),
+  ],
   advanced: {
     cookiePrefix: 'estratico',
     useSecureCookies: env.NODE_ENV === 'production'

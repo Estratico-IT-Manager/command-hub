@@ -77,14 +77,14 @@ export default function RegisterPage() {
                 <Input
                   id="email"
                   type="email"
-                  placeholder="you@estratico.com"
+                  placeholder="you@estratico.org.zw"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   required
                   autoComplete="email"
                 />
                 <p className="text-xs text-muted-foreground mt-1">
-                  Only @estratico.com emails are allowed
+                  Only @estratico.org.zw emails are allowed
                 </p>
               </Field>
               <Field>
@@ -114,7 +114,7 @@ export default function RegisterPage() {
               {error && <FieldError>{error}</FieldError>}
             </FieldGroup>
           </CardContent>
-          <CardFooter className="flex flex-col gap-4">
+          <CardFooter className="flex flex-col gap-4 mt-4">
             <Button type="submit" className="w-full" disabled={register.isPending}>
               {register.isPending ? <Spinner className="mr-2" /> : null}
               Create account

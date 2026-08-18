@@ -4,10 +4,14 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
-    "build": "prisma migrate deploy && next build",
+    "build": "prisma migrate deploy && tsx scripts/backfill-rbac.ts && next build",
     "start": "next start",
     "lint": "eslint .",
+    "seed": "tsx prisma/seed.ts",
     "postinstall": "prisma generate"
+  },
+  "prisma": {
+    "seed": "tsx prisma/seed.ts"
   },
   "dependencies": {
     "@better-auth/prisma-adapter": "^1.5.5",
