@@ -82,31 +82,17 @@ export function EntriesListClient() {
   return (
     <div className="space-y-6">
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <div className="flex items-center gap-3">
-          <Button variant="ghost" size="icon" asChild>
-            <Link href={`/dashboard/cms/sites/${siteId}/types/${typeId}`} aria-label="Back to type">
-              <ArrowLeft className="size-4" />
-            </Link>
-          </Button>
-          <div>
-            <h2 className="text-xl font-semibold">{type.label} — Entries</h2>
-            <p className="text-sm text-muted-foreground">
-              {publishedCount} published · {draftCount} drafts
-            </p>
-          </div>
+        <div>
+          <h2 className="text-xl font-semibold">{type.label}</h2>
+          <p className="text-sm text-muted-foreground">
+            {publishedCount} published · {draftCount} drafts
+          </p>
         </div>
-        <div className="flex items-center gap-2">
-          <Button variant="outline" asChild>
-            <Link href={`/dashboard/cms/sites/${siteId}/types/${typeId}`}>
-              Schema
-            </Link>
-          </Button>
-          <Button asChild>
-            <Link href={`/dashboard/cms/sites/${siteId}/types/${typeId}/entries/new`}>
-              <FilePlus2 className="mr-2 size-4" /> New Entry
-            </Link>
-          </Button>
-        </div>
+        <Button asChild>
+          <Link href={`/dashboard/cms/sites/${siteId}/types/${typeId}/entries/new`}>
+            <FilePlus2 className="mr-2 size-4" /> New Entry
+          </Link>
+        </Button>
       </div>
 
       <div className="flex flex-wrap items-center gap-2">

@@ -1,7 +1,6 @@
 "use client";
 
 import { useParams, useRouter } from "next/navigation";
-import Link from "next/link";
 import { useState } from "react";
 import {
   ArrowLeft,
@@ -260,20 +259,7 @@ const type = data?.contentTypes.find((t) => t.id === typeId);
   return (
     <div className="space-y-6">
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <div className="flex items-center gap-3">
-          <Button variant="ghost" size="icon" asChild>
-            <Link href={`/dashboard/cms/sites/${siteId}`} aria-label="Back to site">
-              <ArrowLeft className="size-4" />
-            </Link>
-          </Button>
-          <div>
-            <h2 className="text-xl font-semibold">{type.label}</h2>
-            <p className="text-sm text-muted-foreground">
-              <code className="rounded bg-muted px-1.5 py-0.5 text-xs">{type.name}</code> — define
-              the schema, then manage entries below.
-            </p>
-          </div>
-        </div>
+        <h2 className="text-xl font-semibold">{type.label}</h2>
         <Button onClick={openCreate}>
           <Plus className="mr-2 size-4" /> Add Field
         </Button>

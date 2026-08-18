@@ -215,7 +215,7 @@ export function EntryEditorClient() {
         <div className="flex items-center gap-3">
           <Button variant="ghost" size="icon" asChild>
             <Link
-              href={`/dashboard/cms/sites/${siteId}/types/${typeId}/entries`}
+              href={`/dashboard/cms/sites/${siteId}/types/${typeId}?view=content`}
               aria-label="Back to entries"
             >
               <ArrowLeft className="size-4" />

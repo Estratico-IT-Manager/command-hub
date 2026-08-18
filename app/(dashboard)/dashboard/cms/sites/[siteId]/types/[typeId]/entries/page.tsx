@@ -3,12 +3,16 @@ import { auth } from "@/lib/auth";
 import { can } from "@/lib/rbac";
 import { PERMISSIONS } from "@/lib/rbac/permissions";
 import { redirect } from "next/navigation";
-import { EntriesListClient } from "@/components/cms/entries-list-client";
 
-export default async function CmsEntriesPage() {
+export default async function CmsEntriesPage({
+  params,
+}: {
+  params: Promise<{ siteId: string; typeId: string }>;
+}) {
   const session = await auth.api.getSession({ headers: await headers() });
   if (!session) redirect("/login");
   if (!(await can(session.user.id, PERMISSIONS.CONTENT_VIEW))) redirect("/dashboard");
 
-  return <EntriesListClient />;
+  const { siteId, typeId } = await params;
+  redirect(`/dashboard/cms/sites/${siteId}/types/${typeId}?view=content`);
 }
