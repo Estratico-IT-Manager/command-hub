@@ -15,6 +15,7 @@ import {
 } from "lucide-react";
 import { useSignOut } from "@/hooks/use-mutations/auth-mutations";
 import { useSyncStatus } from "@/hooks/use-sync-status";
+import { useSession } from "@/lib/auth-client";
 import {
   Sidebar,
   SidebarContent,
@@ -64,6 +65,7 @@ const bottomNavItems = [
 
 export function AppSidebar() {
   const pathname = usePathname();
+  const { data: session } = useSession();
   const { isOnline, isSyncing, pendingChanges } = useSyncStatus();
   const signOut = useSignOut();
 
