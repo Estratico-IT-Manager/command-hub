@@ -322,3 +322,117 @@ model audit_log {
   @@index([createdAt])
   @@map("audit_log")
 }
+
+enum ContentFieldType {
+  TEXT
+  TEXTAREA
+  MARKDOWN
+  IMAGE
+  NUMBER
+  BOOLEAN
+  SELECT
+  MULTISELECT
+  DATE
+  DATETIME
+  RELATION
+  REPEATER
+}
+
+enum EntryStatus {
+  DRAFT
+  PUBLISHED
+}
+
+model Site {
+  id           String          @id @default(uuid())
+  name         String
+  slug         String          @unique
+  description  String?
+  apiKeyHash   String?
+  isActive     Boolean         @default(true)
+  createdAt    DateTime        @default(now())
+  updatedAt    DateTime        @updatedAt
+  contentTypes ContentType[]
+  entries      ContentEntry[]
+  media        MediaAsset[]
+
+  @@index([isActive])
+  @@map("site")
+}
+
+model ContentType {
+  id          String             @id @default(uuid())
+  siteId      String
+  name        String
+  label       String
+  description String?
+  createdAt   DateTime           @default(now())
+  updatedAt   DateTime           @updatedAt
+  site        Site               @relation(fields: [siteId], references: [id], onDelete: Cascade)
+  fields      ContentTypeField[]
+  entries     ContentEntry[]
+
+  @@unique([siteId, name])
+  @@index([siteId])
+  @@map("content_type")
+}
+
+model ContentTypeField {
+  id             String            @id @default(uuid())
+  contentTypeId  String
+  name           String
+  label          String
+  type           ContentFieldType
+  required       Boolean           @default(false)
+  options        Json?
+  relationTypeId String?
+  isTitle        Boolean           @default(false)
+  isSlugSource   Boolean           @default(false)
+  order          Int               @default(0)
+  createdAt      DateTime          @default(now())
+  updatedAt      DateTime          @updatedAt
+  contentType    ContentType       @relation(fields: [contentTypeId], references: [id], onDelete: Cascade)
+
+  @@unique([contentTypeId, name])
+  @@index([contentTypeId])
+  @@map("content_type_field")
+}
+
+model ContentEntry {
+  id            String      @id @default(uuid())
+  siteId        String
+  contentTypeId String
+  slug          String
+  title         String
+  payload       Json
+  status        EntryStatus @default(DRAFT)
+  version       Int         @default(1)
+  isDeleted     Boolean     @default(false)
+  publishedAt   DateTime?
+  createdAt     DateTime    @default(now())
+  updatedAt     DateTime    @updatedAt
+  site          Site        @relation(fields: [siteId], references: [id], onDelete: Cascade)
+  contentType   ContentType @relation(fields: [contentTypeId], references: [id], onDelete: Cascade)
+
+  @@unique([contentTypeId, slug])
+  @@index([siteId])
+  @@index([contentTypeId, status])
+  @@index([contentTypeId, slug])
+  @@map("content_entry")
+}
+
+model MediaAsset {
+  id           String   @id @default(uuid())
+  siteId       String
+  fileName     String
+  mimeType     String
+  size         Int
+  driveFileId  String
+  url          String
+  uploadedById String
+  createdAt    DateTime @default(now())
+  site         Site     @relation(fields: [siteId], references: [id], onDelete: Cascade)
+
+  @@index([siteId])
+  @@map("media_asset")
+}
