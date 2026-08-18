@@ -15,6 +15,7 @@ Command Hub is Estratico's internal operations platform. It brings project track
 - **Email automation** — Resend-powered transactional emails (team invitations, contact/enquiry templates) built with React Email.
 - **Auth** — Better Auth email/password authentication with domain-restricted sign-up, 7-day sessions, and automatic role assignment.
 - **Dashboard** — Live stats (projects, tasks, subscriptions, monthly spend, team members), recent activity, and upcoming renewals within 30 days.
+- **CMS (content management)** — A generic, schema-driven CMS that powers any website. Register sites, define content types visually (text, markdown, image, select, relation, repeater fields), manage draft/published entries with JSON payloads, and consume them over a keyed public REST API. Media uploads are stored in Google Drive.
 - **Theming** — Light, dark, and system themes.
 
 ## Tech Stack
@@ -165,6 +166,62 @@ Mutating API routes write `audit_log` entries containing the actor, entity, acti
 | `/api/sync` | Offline queue push and pull |
 | `/api/audit-log` | Filterable audit trail |
 | `/api/send` | Generic email sender (`email.send` permission) |
+| `/api/cms/sites`, `/api/cms/sites/[siteId]` | CMS site CRUD + API key regeneration |
+| `/api/cms/sites/[siteId]/types/...` | Content type and field schema management |
+| `/api/cms/sites/[siteId]/types/[typeId]/entries/...` | Content entry CRUD (draft/publish) |
+| `/api/cms/sites/[siteId]/media` | Media library + Google Drive uploads |
+| `/api/public/[siteSlug]/[typeName]` | Public read API: list entries (published only) |
+| `/api/public/[siteSlug]/[typeName]/[slug]` | Public read API: single entry |
+| `/api/public/[siteSlug]/media` | Public read API: asset metadata |
+
+## CMS (Content Management System)
+
+Command Hub includes a generic CMS for powering websites.
+
+### Concepts
+
+- **Site** — a website the CMS manages (e.g. "estratico-profile"). Each site
+  has its own API key (`x-api-key` header) for the public API.
+- **Content Type** — a collection with a schema, e.g. `posts`, `services`,
+  `projects`. Built visually in the admin UI ("Content → Websites").
+- **Field** — a schema entry. Supported types: `TEXT`, `TEXTAREA`, `MARKDOWN`,
+  `IMAGE`, `NUMBER`, `BOOLEAN`, `SELECT`, `MULTISELECT`, `DATE`, `DATETIME`,
+  `RELATION` (points at another type's entry slug), `REPEATER` (list of block
+  sub-fields).
+- **Entry** — one record of a content type: slug, title (from the marked
+  title field), JSON payload, `DRAFT`/`PUBLISHED` status, version, audit trail.
+- **Media** — uploads stored in Google Drive (service account + shared folder),
+  served as public URLs.
+
+### Public API
+
+```
+GET /api/public/{siteSlug}/{typeName}?status=&page=&limit=&sort=&order=&slug=
+GET /api/public/{siteSlug}/{typeName}/{slug}
+GET /api/public/{siteSlug}/media
+```
+
+Auth: `x-api-key: <site API key>` (generated per site in the admin UI; stored
+hashed). Only published, non-deleted entries are returned. Responses are
+cacheable (`s-maxage=60`).
+
+### Google Drive setup (media uploads)
+
+1. Create a Google Cloud service account and download its JSON key.
+2. Create a folder in Drive and share it with the service account email
+   (Editor).
+3. Set `GOOGLE_CLIENT_EMAIL`, `GOOGLE_PRIVATE_KEY`, `GOOGLE_DRIVE_FOLDER_ID`
+   in the environment (validated in `lib/env.ts`).
+
+### Seeding content
+
+```bash
+pnpm seed:estratico    # creates the estratico-profile site, types, and content
+pnpm migrate:posts     # migrates BaseHub posts into the CMS (needs BASEHUB_TOKEN)
+```
+
+Consumers (e.g. the profile website) fetch content over the public API; see
+`CMS-INTEGRATION.md` in the estratico-profile repo for the integration guide.
 
 ## Contributing
 

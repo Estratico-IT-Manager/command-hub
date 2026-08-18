@@ -16,6 +16,13 @@ export const PERMISSIONS = {
   EMAIL_SEND: "email.send",
   ADMIN_DASHBOARD_ACCESS: "admin.dashboard.access",
 
+  // --- CMS (content management system) ---
+  CONTENT_VIEW: "content.view",
+  CONTENT_CREATE: "content.create",
+  CONTENT_EDIT: "content.edit",
+  CONTENT_DELETE: "content.delete",
+  CONTENT_PUBLISH: "content.publish",
+
   // --- Team-scoped entities (TeamRole governs actions; these are global grants) ---
   TEAM_CREATE: "team.create",
   TEAM_VIEW: "team.view",
@@ -65,6 +72,11 @@ const ADMIN_PERMISSIONS = [
   PERMISSIONS.SYNC_VIEW,
   PERMISSIONS.EMAIL_SEND,
   PERMISSIONS.ADMIN_DASHBOARD_ACCESS,
+  PERMISSIONS.CONTENT_VIEW,
+  PERMISSIONS.CONTENT_CREATE,
+  PERMISSIONS.CONTENT_EDIT,
+  PERMISSIONS.CONTENT_DELETE,
+  PERMISSIONS.CONTENT_PUBLISH,
   PERMISSIONS.TEAM_CREATE,
   PERMISSIONS.TEAM_VIEW,
   PERMISSIONS.TEAM_EDIT,
