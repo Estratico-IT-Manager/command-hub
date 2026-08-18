@@ -73,6 +73,7 @@ export interface LocalSubscription {
   serviceName: string
   provider: string
   startDate: string
+  lastPaymentDate?: string
   frequency: SubscriptionFrequency
   cost: number
   currency: string

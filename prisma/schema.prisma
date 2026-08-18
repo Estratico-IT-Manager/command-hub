@@ -261,6 +261,7 @@ model subscription {
   serviceName     String
   provider        String
   startDate       DateTime
+  lastPaymentDate DateTime?
   frequency       SubscriptionFrequency
   cost            Float
   currency        String                @default("USD")

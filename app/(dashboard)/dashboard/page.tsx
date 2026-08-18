@@ -27,6 +27,7 @@ import {
   addMonths,
   addYears,
 } from "date-fns";
+import { DashboardClient } from "@/components/dashboard/dashboard-client";
 
 async function getDashboardStats(userId: string) {
   // 1. Get user's teams
@@ -192,7 +193,7 @@ async function getUpcomingRenewals(userId: string) {
   const upcomingRenewals = subscriptions
     .map((sub) => {
       const nextBillingDate = calculateNextBillingDate(
-        sub.lastPaymentDate,
+        sub.lastPaymentDate ?? sub.startDate,
         sub.frequency,
       );
       return {

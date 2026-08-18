@@ -208,6 +208,7 @@ export function SubscriptionForm({
               tableName: "subscription",
               recordId: initialData.id,
               action: "update",
+              queryKey: ["subscriptions"],
               payload: {
                 serviceName: data.serviceName,
                 provider: data.provider,
@@ -250,6 +251,7 @@ export function SubscriptionForm({
               tableName: "subscription",
               recordId: subscriptionId,
               action: "create",
+              queryKey: ["subscriptions"],
               payload: {
                 teamId: data.teamId,
                 serviceName: data.serviceName,

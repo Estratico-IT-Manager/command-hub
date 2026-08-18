@@ -38,6 +38,7 @@ interface SubscriptionData {
   version: number
   isDeleted: boolean
   startDate: string | Date
+  lastPaymentDate: string | Date | null
   createdAt: string | Date
   updatedAt: string | Date
   team?: { id: string; name: string }
@@ -252,6 +253,9 @@ export function SubscriptionDetailClient({ subscriptionId, userId }: Subscriptio
         subscription={{
           ...subscription,
           startDate: new Date(subscription.startDate),
+          lastPaymentDate: subscription.lastPaymentDate
+            ? new Date(subscription.lastPaymentDate)
+            : null,
           createdAt: new Date(subscription.createdAt),
           updatedAt: new Date(subscription.updatedAt),
         }}

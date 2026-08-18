@@ -670,6 +670,9 @@ async function handleSubscriptionSync(
           startDate: payload.startDate
             ? new Date(payload.startDate)
             : new Date(),
+          lastPaymentDate: payload.lastPaymentDate
+            ? new Date(payload.lastPaymentDate)
+            : undefined,
           notes: payload.notes || "",
           isActive: payload.isActive,
         },
@@ -713,6 +716,9 @@ async function handleSubscriptionSync(
           notes: payload.notes || "",
           version: Number(payload.version ?? 0) + 1,
           startDate: payload.startDate ? new Date(payload.startDate) : undefined,
+          lastPaymentDate: payload.lastPaymentDate
+            ? new Date(payload.lastPaymentDate)
+            : undefined,
         },
       });
 
