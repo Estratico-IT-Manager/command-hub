@@ -7,6 +7,7 @@ import {
   KanbanSquare,
   CreditCard,
   Users,
+  Globe,
   Settings,
   LogOut,
   Wifi,
@@ -31,6 +32,8 @@ import {
 } from "@/components/ui/sidebar";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
+import { can } from "@/lib/rbac/client";
+import { PERMISSIONS } from "@/lib/rbac/permissions";
 
 const mainNavItems = [
   {
@@ -55,6 +58,14 @@ const mainNavItems = [
   },
 ];
 
+const cmsNavItems = [
+  {
+    title: "Websites",
+    href: "/dashboard/cms/sites",
+    icon: Globe,
+  },
+];
+
 const bottomNavItems = [
   {
     title: "Settings",
@@ -68,6 +79,13 @@ export function AppSidebar() {
   const { data: session } = useSession();
   const { isOnline, isSyncing, pendingChanges } = useSyncStatus();
   const signOut = useSignOut();
+
+  const permissions =
+    (session?.user as { permissions?: string[] } | undefined)?.permissions ?? [];
+  const canViewContent = can(
+    { permissions, roleNames: [] },
+    PERMISSIONS.CONTENT_VIEW,
+  );
 
   return (
     <Sidebar>
@@ -117,6 +135,34 @@ export function AppSidebar() {
             </SidebarMenu>
           </SidebarGroupContent>
         </SidebarGroup>
+
+        <SidebarSeparator />
+
+        {canViewContent && (
+          <SidebarGroup>
+            <SidebarGroupLabel>Content</SidebarGroupLabel>
+            <SidebarGroupContent>
+              <SidebarMenu className="overflow-x-hidden">
+                {cmsNavItems.map((item) => (
+                  <SidebarMenuItem key={item.href}>
+                    <SidebarMenuButton
+                      asChild
+                      isActive={
+                        pathname === item.href || pathname.startsWith(item.href + "/")
+                      }
+                      tooltip={item.title}
+                    >
+                      <Link href={item.href}>
+                        <item.icon className="size-4" />
+                        <span>{item.title}</span>
+                      </Link>
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
+                ))}
+              </SidebarMenu>
+            </SidebarGroupContent>
+          </SidebarGroup>
+        )}
 
         <SidebarSeparator />
 
