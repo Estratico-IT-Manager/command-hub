@@ -48,27 +48,6 @@ const CONTENT_TYPES: { name: string; label: string; description: string; fields:
     ],
   },
   {
-    name: "services",
-    label: "Services",
-    description: "Services offered, shown on /services.",
-    fields: [
-      { name: "title", label: "Title", type: "TEXT", required: true, isTitle: true, isSlugSource: true },
-      { name: "slug", label: "Slug", type: "TEXT" },
-      { name: "short_description", label: "Short Description", type: "TEXTAREA", required: true },
-      { name: "description", label: "Description", type: "MARKDOWN", required: true },
-      {
-        name: "features",
-        label: "Features",
-        type: "REPEATER",
-        options: {
-          fields: [{ name: "feature", label: "Feature", type: "TEXT", required: true }],
-        },
-      },
-      { name: "icon", label: "Icon", type: "TEXT" },
-      { name: "order", label: "Order", type: "NUMBER" },
-    ],
-  },
-  {
     name: "projects",
     label: "Portfolio Projects",
     description: "Case studies shown on /work.",
@@ -123,31 +102,6 @@ const CONTENT_TYPES: { name: string; label: string; description: string; fields:
     ],
   },
   {
-    name: "site_config",
-    label: "Site Config",
-    description: "Global site settings: name, contact details, socials.",
-    fields: [
-      { name: "name", label: "Name", type: "TEXT", required: true, isTitle: true },
-      { name: "description", label: "Description", type: "TEXTAREA" },
-      { name: "url", label: "URL", type: "TEXT" },
-      { name: "og_image", label: "OG Image", type: "IMAGE" },
-      { name: "twitter", label: "Twitter", type: "TEXT" },
-      { name: "linkedin", label: "LinkedIn", type: "TEXT" },
-      { name: "github", label: "GitHub", type: "TEXT" },
-      { name: "email", label: "Email", type: "TEXT" },
-      { name: "phone", label: "Phone", type: "TEXT" },
-      { name: "address", label: "Address", type: "TEXT" },
-      {
-        name: "keywords",
-        label: "Keywords",
-        type: "REPEATER",
-        options: {
-          fields: [{ name: "keyword", label: "Keyword", type: "TEXT", required: true }],
-        },
-      },
-    ],
-  },
-  {
     name: "legal_pages",
     label: "Legal Pages",
     description: "Privacy policy and terms of service.",
@@ -156,92 +110,6 @@ const CONTENT_TYPES: { name: string; label: string; description: string; fields:
       { name: "slug", label: "Slug", type: "TEXT" },
       { name: "content", label: "Content", type: "MARKDOWN", required: true },
     ],
-  },
-];
-
-const SERVICES = [
-  {
-    title: "Web Development",
-    slug: "web-development",
-    shortDescription:
-      "Modern, scalable web applications built with cutting-edge technologies.",
-    description:
-      "We create responsive, high-performance web applications using React, Next.js, and modern frameworks. Our solutions are built for scale, security, and exceptional user experience.",
-    features: ["Custom Web Applications", "E-commerce Solutions", "Progressive Web Apps", "API Development"],
-    icon: "Globe",
-    order: 1,
-  },
-  {
-    title: "Mobile Development",
-    slug: "mobile-development",
-    shortDescription: "Native and cross-platform mobile apps for iOS and Android.",
-    description:
-      "From concept to deployment, we build mobile applications that users love. Our team specializes in React Native, Flutter, and native iOS/Android development.",
-    features: ["iOS & Android Apps", "Cross-Platform Solutions", "App Store Optimization", "Mobile UI/UX Design"],
-    icon: "Smartphone",
-    order: 2,
-  },
-  {
-    title: "Cloud Solutions",
-    slug: "cloud-solutions",
-    shortDescription: "Scalable cloud infrastructure and DevOps engineering.",
-    description:
-      "We architect and implement cloud solutions on AWS, Azure, and Google Cloud. Our DevOps practices ensure reliable, scalable, and cost-effective infrastructure.",
-    features: ["Cloud Architecture", "DevOps & CI/CD", "Kubernetes & Docker", "Cloud Migration"],
-    icon: "Cloud",
-    order: 3,
-  },
-  {
-    title: "AI Integration",
-    slug: "ai-integration",
-    shortDescription: "Intelligent solutions powered by machine learning and AI.",
-    description:
-      "Leverage the power of artificial intelligence in your business. We implement custom AI solutions, chatbots, predictive analytics, and automation workflows.",
-    features: ["Machine Learning", "Natural Language Processing", "Computer Vision", "AI Chatbots"],
-    icon: "Brain",
-    order: 4,
-  },
-  {
-    title: "Digital Media & Marketing Strategy",
-    slug: "digital-strategy",
-    shortDescription:
-      "Integrated strategic consulting for brand growth and digital dominance.",
-    description:
-      "We bridge the gap between technology and storytelling. Our strategy services align your digital infrastructure with high-performance marketing and media execution to drive measurable ROI.",
-    features: [
-      "Omnichannel Marketing Strategy",
-      "Media Planning & Buying",
-      "Content & Brand Positioning",
-      "Growth Marketing & Data Analytics",
-    ],
-    icon: "Megaphone",
-    order: 5,
-  },
-  {
-    title: "UI/UX Design",
-    slug: "ui-ux-design",
-    shortDescription: "User-centered design that drives engagement and conversions.",
-    description:
-      "Our design team creates intuitive, beautiful interfaces that users love. We combine user research, prototyping, and iterative testing to deliver exceptional experiences.",
-    features: ["User Research", "Interface Design", "Prototyping", "Design Systems"],
-    icon: "Palette",
-    order: 6,
-  },
-  {
-    title: "Networking",
-    slug: "networking",
-    shortDescription:
-      "Reliable, secure network infrastructure designed for seamless connectivity, performance, and future growth.",
-    description:
-      "We design and install reliable network infrastructure for businesses, offices, institutions, and other organizations. From structured cabling and Wi-Fi deployment to network equipment installation and configuration, we build secure, scalable networks that keep your teams and systems connected.",
-    features: [
-      "Structured Cabling",
-      "Wi-Fi Infrastructure",
-      "Network Equipment Installation",
-      "Network Design & Deployment",
-    ],
-    icon: "Network",
-    order: 7,
   },
 ];
 
@@ -380,39 +248,6 @@ const FAQS = [
   },
 ];
 
-const SITE_CONFIG = {
-  name: "Estratico Technologies",
-  description:
-    "Estratico is a full-service technology company based in Zimbabwe. We are focussed on delivering innovative digital solutions for companies in Zimbabwe and beyond. We transform businesses through cutting-edge software development, strategic consulting, and digital transformation services.",
-  url: "https://estratico.org.zw",
-  og_image: "https://estratico.org.zw/og-image.jpg",
-  twitter: "https://twitter.com/estratico",
-  linkedin: "https://linkedin.com/company/estratico",
-  github: "https://github.com/estratico",
-  email: "hello@estratico.org.zw",
-  phone: "+263 78 305 2192",
-  address: "4360 Mkoba 10 Gweru, Zimbabwe",
-  keywords: [
-    "technology company",
-    "software development",
-    "digital transformation",
-    "web development",
-    "web hosting",
-    "email hosting",
-    "vps setup",
-    "vps management",
-    "e-commerce systems",
-    "wordpress",
-    "mobile apps",
-    "cloud solutions",
-    "AI solutions",
-    "consulting",
-    "estratico",
-    "estratico technologies",
-    "estratico zimbabwe",
-  ],
-};
-
 function readLegalMarkdown(fileName: string): string | null {
   const path = resolve(PROFILE_REPO, "public/content", fileName);
   if (!existsSync(path)) return null;
@@ -521,19 +356,6 @@ async function main() {
     types.set(def.name, contentType);
   }
 
-  const servicesType = types.get("services")!;
-  for (const service of SERVICES) {
-    await upsertEntry(servicesType, service.slug, {
-      title: service.title,
-      slug: service.slug,
-      short_description: service.shortDescription,
-      description: service.description,
-      features: service.features.map((feature) => ({ feature })),
-      icon: service.icon,
-      order: service.order,
-    });
-  }
-
   const projectsType = types.get("projects")!;
   for (const project of PROJECTS) {
     await upsertEntry(projectsType, project.slug, {
@@ -576,21 +398,6 @@ async function main() {
       answer: faq.answer,
     });
   }
-
-  const siteConfigType = types.get("site_config")!;
-  await upsertEntry(siteConfigType, "estratico-profile", {
-    name: SITE_CONFIG.name,
-    description: SITE_CONFIG.description,
-    url: SITE_CONFIG.url,
-    og_image: SITE_CONFIG.og_image,
-    twitter: SITE_CONFIG.twitter,
-    linkedin: SITE_CONFIG.linkedin,
-    github: SITE_CONFIG.github,
-    email: SITE_CONFIG.email,
-    phone: SITE_CONFIG.phone,
-    address: SITE_CONFIG.address,
-    keywords: SITE_CONFIG.keywords.map((keyword) => ({ keyword })),
-  });
 
   const legalType = types.get("legal_pages")!;
   const legalFiles: { slug: string; title: string; fileName: string }[] = [
