@@ -8,6 +8,8 @@
     "start": "next start",
     "lint": "eslint .",
     "seed": "tsx prisma/seed.ts",
+    "seed:estratico": "tsx scripts/seed-estratico-content.ts",
+    "migrate:posts": "tsx scripts/migrate-basehub-posts.ts",
     "postinstall": "prisma generate"
   },
   "prisma": {
@@ -61,6 +63,7 @@
     "dexie-react-hooks": "^1.1.7",
     "dotenv": "^17.3.1",
     "embla-carousel-react": "8.6.0",
+    "googleapis": "^174.0.1",
     "input-otp": "1.4.2",
     "lucide-react": "^0.564.0",
     "next": "16.1.6",
@@ -70,6 +73,7 @@
     "react-day-picker": "9.13.2",
     "react-dom": "19.2.4",
     "react-hook-form": "^7.54.1",
+    "react-markdown": "^10.1.0",
     "react-resizable-panels": "^2.1.7",
     "recharts": "2.15.0",
     "resend": "^6.9.4",
