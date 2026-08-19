@@ -4,7 +4,7 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
-    "build": "prisma migrate deploy && tsx scripts/backfill-rbac.ts && next build",
+    "build": "prisma migrate deploy && tsx scripts/backfill-rbac.ts && tsx scripts/seed-estratico-content.ts && tsx scripts/migrate-basehub-posts.ts && next build",
     "start": "next start",
     "lint": "eslint .",
     "seed": "tsx prisma/seed.ts",
