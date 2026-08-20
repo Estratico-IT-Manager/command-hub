@@ -50,6 +50,7 @@ function extractMarkdown(post: any): string {
 }
 
 async function main() {
+  console.log("[migrate-basehub-posts] started");
   const site = await prisma.site.findUnique({ where: { slug: SITE_SLUG } });
   if (!site) {
     throw new Error(`Site "${SITE_SLUG}" not found — run seed-estratico-content.ts first`);
