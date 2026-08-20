@@ -327,6 +327,7 @@ async function upsertEntry(
 }
 
 async function main() {
+  console.log("[seed-estratico-content] started");
   let site = await prisma.site.findUnique({ where: { slug: SITE_SLUG } });
   if (!site) {
     site = await prisma.site.create({
